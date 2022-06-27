@@ -1,0 +1,10 @@
+# MQTT server configuration values
+mqtt:
+    host: "localhost"
+    port: 1883
+    user: ""
+    pass: ""
+
+# Sparkplug B v1.0 configuration values
+sparkplugb:
+    domain_id : "DomainTest"
