@@ -1,4 +1,4 @@
-MQTT  Sparkplug B v1.0 Python Wrapper 
+# mqtt-spb-wrapper python library
 
 This python module implements a wrapper around the Eclipse Tahu Sparkplug B v1.0 core modules, to easily create and handle MQTT Sparkplug B entities in Python in an easy way.
 
@@ -155,9 +155,3 @@ app.connect("localhost", 1883 )
 while True:
     time.sleep(1000)
 ```
-
-
-
-## LICENSE
-
-TODO
