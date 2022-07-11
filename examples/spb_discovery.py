@@ -13,8 +13,7 @@ from mqtt_spb_wrapper import *
 _DEBUG = False   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_group_name = "GroupTest"    # Specific group name or "*" for all groups
-_config_spb_group_name = "*"
+_config_spb_group_name = os.environ.get("SPB_GROUP", "*")
 
 # MQTT Configuration
 _config_mqtt_host = os.environ.get("MQTT_HOST", "localhost")

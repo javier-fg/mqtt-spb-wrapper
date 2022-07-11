@@ -18,8 +18,8 @@ from mqtt_spb_wrapper import *
 _DEBUG = True   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_group_name = "GroupTest"
-_config_spb_scada_name = "SCADA01"
+_config_spb_group_name = os.environ.get("SPB_GROUP", "GroupTest")
+_config_spb_scada_name = os.environ.get("SPB_SCADA", "SCADA-001")
 
 # MQTT Configuration
 _config_mqtt_topic = "#"    # Topic to listen
