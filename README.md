@@ -42,11 +42,11 @@ def callback_message(topic, payload):
 
 
 # Create the spB entity object
-domain_name = "Domain-001"
+group_name = "Group-001"
 edge_node_name = "Gateway-001"
 device_name = "SimpleEoND-01"
 
-device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
+device = MqttSpbEntityDevice(group_name, edge_node_name, device_name, _DEBUG)
 
 device.on_message = callback_message  # Received messages
 device.on_command = callback_command  # Callback for received commands
@@ -113,7 +113,7 @@ def callback_app_message(topic, payload):
 
 
 def callback_app_command(payload):
-    print("APP received CMD: %s" % (payload))
+    print("APP received CMD: %s" % payload)
 
 
 domain_name = "Domain-001"
