@@ -6,17 +6,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mqtt_spb_wrapper"
-version = "1.0.0"
-description = "MQTT Sparkplub B v1.0 Wrapper"
+version = "1.0.8"
+description = "MQTT Sparkplug B v1.0 Wrapper"
 readme = "README.md"
-authors = [{ name = "Javier FG", email = "info@jfg.com" }]
-license = { file = "LICENSE" }
+authors = [{ name = "Javier FG" }]
+#license = { file = "LICENSE" }
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-keywords = ["feed", "reader", "tutorial"]
+keywords = ["sparkplug", "mqtt", "ecliplse", "tahu", "iiot", "iot"]
 dependencies = [
     "paho_mqtt==1.6.1",
     "protobuf==3.20.1",
@@ -24,6 +24,22 @@ dependencies = [
 requires-python = ">=3.7"
 
 [project.urls]
-Homepage = "https://github.com/realpython/reader"
+Homepage = "https://github.com/javier-fg/mqtt-spb-wrapper"
 
+# Package distribution extracted from:
 # https://realpython.com/pypi-publish-python-package/
+#
+# https://test.pypi.org/
+#
+# Local install
+#   python3 -m pip install -e .
+#
+# Dependencies: python3.exe -m pip install pip-tools build twine
+# python.exe -m build
+# twine check dist/*
+# twine upload -r testpypi dist/*
+#
+# Final upload:
+# twine upload dist/*
+#
+# pip3 install -i http://test.pypi.org/simple/ mqtt-spb-wrapper

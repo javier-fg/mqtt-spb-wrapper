@@ -7,9 +7,9 @@ mqtt:
 
 # Sparkplug B v1.0 configuration values
 sparkplugb:
-    domain_id : "DomainTest"
-    edge_node_id: "Home-001"
-    device_id: "SmartMeter"
+    group_name : "GroupTest"
+    edge_node_name: "Gateway-001"
+    device_name: "SmartMeter3"
 
 # Data configuration values
 data:

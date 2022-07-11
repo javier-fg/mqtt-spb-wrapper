@@ -15,10 +15,27 @@ _log_handle = logging.StreamHandler()
 _log_handle.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s | %(message)s'))
 logger.addHandler(_log_handle)
 
-class MqttSparkPlugB_Topic():
 
-    def __init__(self, topic_str):
-        self.parse_topic(topic_str)
+class MqttSpbTopic:
+    """
+        Class used to parse MQTT topic string and discover all different Sparkplug b entities
+    """
+
+    def __init__(self, topic_str= None):
+
+        self.topic = ""
+
+        self.namespace = None
+
+        self.group_name = None
+        self.message_type = None
+        self.eon_name = None
+        self.eon_device_name = None
+
+        self.entity_name = None
+
+        if topic_str is not None:
+            self.parse_topic(topic_str)
 
     def __str__(self):
         return str(self.topic)
@@ -31,59 +48,132 @@ class MqttSparkPlugB_Topic():
         topic_fields = topic_str.split('/')  # Get the topic
 
         self.topic = topic_str
-        self.namespace = topic_fields[0]
-        self.domain_id = topic_fields[1]
-        self.message_type = topic_fields[2]
-        self.edge_node_id = None
-        self.device_id = None
-        self.entity_id = None
 
-        #If EoN
+        self.namespace = topic_fields[0]
+        self.group_name = topic_fields[1]
+        self.message_type = topic_fields[2]
+        self.eon_name = None
+        self.eon_device_name = None
+
+        self.entity_name = None
+
+        # If EoN
         if len(topic_fields) > 3:
-            self.edge_node_id = topic_fields[3]
-            self.entity_id = self.edge_node_id
+            self.eon_name = topic_fields[3]
+            self.entity_name = self.eon_name
 
         # If EoN device type
         if len(topic_fields) > 4:
-            self.device_id = topic_fields[4]
-            self.entity_id = self.device_id
+            self.eon_device_name = topic_fields[4]
+            self.entity_name = self.eon_device_name
+
+        return str(self)
 
 
-class MqttSparkPlugB_Entity():
+class MqttSpbPayload:
+    """
+        Class to parse binary payloads into dictionary
+    """
 
-    def __init__(self, domain_id, edge_node_id, device_id,
+    def __init__(self, payload_data = None):
+
+        self.payload = None
+
+        # If data is passed, then process it
+        if payload_data is not None:
+            return self.parse_payload(payload_data)
+
+    def __str__(self):
+        return str(self.payload)
+
+    def __repr__(self):
+        return str(self.payload)
+
+    def parse_payload(self, payload_data):
+        """
+           Parse MQTT sparkplug B payload bytes ( protobuff ) into JSON
+        :param payload_data: bytes ( protobuff )
+        :return:  Dictionary or None if fails
+        """
+        pb_payload = Payload()
+
+        try:
+            pb_payload.ParseFromString(payload_data)
+            payload = MessageToDict(pb_payload)  # Convert it to DICT for easy handeling
+
+            # Add the metrics [TYPE_value] field into [value] field for convenience
+            if "metrics" in payload.keys():
+                for i in range(len(payload['metrics'])):
+                    for k in payload['metrics'][i].keys():
+                        if "Value" in k:
+                            payload['metrics'][i]['value'] = payload['metrics'][i][k]
+                            break
+
+        except Exception as e:
+
+            # Check if payload is from SCADA
+            _payload = payload_data.decode()
+            if _payload == "OFFLINE" or _payload == "ONLINE":
+                self.payload = _payload
+                return self.payload
+
+            logger.error("Could not parse MQTT CMD payload, message ignored ! (reason: %s)" % (str(e)))
+            print(payload_data.decode())
+            return None
+
+        self.payload = payload  # Save the current payload
+        return self.payload
+
+
+class MqttSpbEntity:
+
+    def __init__(self, spb_group_name, spb_eon_name,
+                 spb_eon_device_name = None,
                  debug_info=False,
                  filter_cmd_msg=True,
                  entity_is_scada=False):
 
-        # Enable / dissable the class logger messages
+        # Enable / disable the class logger messages
         if debug_info:
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.ERROR)
 
-        self._domain_id = domain_id
-        self._edge_node_id = edge_node_id
-        self._device_id = device_id
+        # Public members -----------
+
+        self.entity_uid = None        # Generic attributes
+        self.entity_class = None
+        self.entity_subclass = None
 
         self.is_alive = True
 
-        if device_id is None:
-            self._entity_domain = "%s.%s" % (self._domain_id, self._edge_node_id)
-        else:
-            self._entity_domain = "%s.%s.%s" % (self._domain_id, self._edge_node_id, self._device_id)
+        self.attribures = self._ValuesGroup()
+        self.data = self._ValuesGroup()
+        self.commands = self._ValuesGroup()
 
         self.on_command = None  # Callback function when a comand is received
         self.on_connect = None
         self.on_message = None
 
+        # Private members -----------
+
+        self._spb_group_name = spb_group_name
+        self._spb_eon_name = spb_eon_name
+        self._spb_eon_device_name = spb_eon_device_name
+
+        if spb_eon_device_name is None:
+            self._entity_domain = "%s.%s" % (self._spb_group_name, self._spb_eon_name)
+        else:
+            self._entity_domain = "%s.%s.%s" % (self._spb_group_name, self._spb_eon_name, self._spb_eon_device_name)
+
+        if spb_eon_device_name is None:
+            self._entity_name = self._spb_eon_name
+        else:
+            self._entity_name = self._spb_eon_device_name
+
         self._mqtt = None  # Mqtt client object
 
         self._loopback_topic = ""   # Last publish topic, to avoid ñoopback message reception
-
-        self.attribures = self._ValuesGroup()
-        self.data = self._ValuesGroup()
-        self.commands = self._ValuesGroup()
 
         self._filter_cmd_msg = filter_cmd_msg
         self._entity_is_scada = entity_is_scada
@@ -98,10 +188,10 @@ class MqttSparkPlugB_Entity():
 
     def get_dictionary(self):
         temp = {}
-        temp['domain_id'] = self._domain_id
-        temp['edge_node_id'] = self._edge_node_id
-        if self._device_id is not None:
-            temp['device_id'] = self._device_id
+        temp['spb_group_name'] = self._spb_group_name
+        temp['spb_eon_name'] = self._spb_eon_name
+        if self._spb_eon_device_name is not None:
+            temp['spb_eon_device_name'] = self._spb_eon_device_name
         temp['data'] = self.data.get_dictionary()
         temp['attributes'] = self.attribures.get_dictionary()
         temp['commands'] = self.commands.get_dictionary()
@@ -113,16 +203,25 @@ class MqttSparkPlugB_Entity():
         return False
 
     @property
-    def domain_id(self):
-        return self._domain_id
+    def spb_group_name(self):
+        return self._spb_group_name
 
     @property
-    def edge_node_id(self):
-        return self._edge_node_id
+    def spb_eon_name(self):
+        return self._spb_eon_name
 
     @property
-    def device_id(self):
-        return self._device_id
+    def spb_eon_device_name(self):
+        return self._spb_eon_device_name
+
+    @property
+    def entity_name(self):
+        return self._entity_name
+
+    @property
+    def entity_domain(self):
+        return self._entity_domain
+
 
     def _spb_data_type(self, data):
         if isinstance(data, str):
@@ -130,7 +229,7 @@ class MqttSparkPlugB_Entity():
         elif isinstance(data, bool):
             return MetricDataType.Boolean
         elif isinstance(data, int):
-            return MetricDataType.Int64
+            return MetricDataType.Double
         elif isinstance(data, float):
             return MetricDataType.Double
         elif isinstance(data, bytes) or isinstance(data, bytearray):
@@ -151,14 +250,14 @@ class MqttSparkPlugB_Entity():
 
         # If it is a type entity SCADA, change the BIRTH certificate
         if self._entity_is_scada:
-            topic = "spBv1.0/" + self.domain_id + "/STATE/" + self._edge_node_id
+            topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
             self._loopback_topic = topic
             self._mqtt.publish(topic, "ONLINE".encode("utf-8"), 0, True)
             logger.info("%s - Published STATE BIRTH message " % (self._entity_domain))
             return
 
         # PAYLOAD
-        if self._device_id == None:  # EoN type
+        if self._spb_eon_device_name is None:  # EoN type
             payload = getNodeBirthPayload()
         else:  # Device
             payload = getDeviceBirthPayload()
@@ -183,16 +282,22 @@ class MqttSparkPlugB_Entity():
 
         # Publish BIRTH message
         payload_bytes = bytearray(payload.SerializeToString())
-        if self._device_id == None:  # EoN
-            topic = "spBv1.0/" + self.domain_id + "/NBIRTH/" + self._edge_node_id
+        if self._spb_eon_device_name is None:  # EoN
+            topic = "spBv1.0/" + self.spb_group_name + "/NBIRTH/" + self._spb_eon_name
         else:
-            topic = "spBv1.0/" + self.domain_id + "/DBIRTH/" + self._edge_node_id + "/" + self._device_id
+            topic = "spBv1.0/" + self.spb_group_name + "/DBIRTH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
         self._loopback_topic = topic
         self._mqtt.publish(topic, payload_bytes, 0, True)
 
         logger.info("%s - Published BIRTH message" % (self._entity_domain))
 
     def publish_data(self, send_all=False):
+        """
+            Send the new updated data to the MQTT broker as a Sparkplug B DATA message.
+
+        :param send_all: boolean    True: Send all data fields, False: send only updated field values.
+        :return:                    result
+        """
 
         if not self.is_connected():  # If not connected
             logger.warning(
@@ -208,24 +313,24 @@ class MqttSparkPlugB_Entity():
         payload = getDdataPayload()
 
         for item in self.data.values:
-            # Only send those values that have been updated, or if send_all==True, then send all.
+            # Only send those values that have been updated, or if send_all==True then send all.
             if send_all or item.is_updated:
                 addMetric(payload, item.name, None, self._spb_data_type(item.value), item.value)
 
         # Send payload if there is new data
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
-            if self._device_id == None:  # EoN
-                topic = "spBv1.0/" + self.domain_id + "/NDATA/" + self._edge_node_id
+            if self._spb_eon_device_name is None:  # EoN
+                topic = "spBv1.0/" + self.spb_group_name + "/NDATA/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.domain_id + "/DDATA/" + self._edge_node_id + "/" + self._device_id
+                topic = "spBv1.0/" + self.spb_group_name + "/DDATA/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._loopback_topic = topic
             self._mqtt.publish(topic, payload_bytes, 0, False)
 
             logger.info("%s - Published DATA message %s" % (self._entity_domain, topic))
             return True
 
-        logger.warning("%s - Could not publish DATA message" % (self._entity_domain))
+        logger.warning("%s - Could not publish DATA message, may be data no new data values?" % (self._entity_domain))
         return False
 
     def connect(self, host='localhost', port=1883, user = "", password = ""):
@@ -247,23 +352,27 @@ class MqttSparkPlugB_Entity():
 
         # Entity DEATH message - last will message
         if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-            topic = "spBv1.0/" + self.domain_id + "/STATE/" + self._edge_node_id
+            topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
             self._mqtt.will_set(topic, "OFFLINE".encode("utf-8"), 0, True)  # Set message
         else:  # Normal node
             payload = getNodeDeathPayload()
             payload_bytes = bytearray(payload.SerializeToString())
-            if self._device_id == None:  # EoN
-                topic = "spBv1.0/" + self.domain_id + "/NDEATH/" + self._edge_node_id
+            if self._spb_eon_device_name is None:  # EoN
+                topic = "spBv1.0/" + self.spb_group_name + "/NDEATH/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.domain_id + "/DDEATH/" + self._edge_node_id + "/" + self._device_id
+                topic = "spBv1.0/" + self.spb_group_name + "/DDEATH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._mqtt.will_set(topic, payload_bytes, 0, True)  # Set message
 
         # MQTT Connect
-        self._mqtt.connect(host, port)
+        logger.info("%s - Trying to connect MQTT server %s:%d" % (self._entity_domain, host, port))
+        try:
+            self._mqtt.connect(host, port)
+        except Exception as e:
+            logger.warning("%s - Could not connect to MQTT server (%s)" % (self._entity_domain, str(e)))
+            return False
+
         time.sleep(0.1)
         self._mqtt.loop_start()  # Start MQTT background task
-
-        logger.info("%s - Trying to connect MQTT server %s:%d" % (self._entity_domain, host, port))
 
         return True
 
@@ -291,18 +400,17 @@ class MqttSparkPlugB_Entity():
 
             # Subscribing in on_connect() means that if we lose the connection and
             # reconnect then subscriptions will be renewed.
-            if self._device_id is None:  # EoN
-                topic = "spBv1.0/" + self.domain_id + "/NCMD/" + self._edge_node_id
+            if self._spb_eon_device_name is None:  # EoN
+                topic = "spBv1.0/" + self.spb_group_name + "/NCMD/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.domain_id + "/DCMD/" + self._edge_node_id + "/" + self._device_id
+                topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
-            #Subscribe to STATE of SCADA application
-            topic = "spBv1.0/" + self.domain_id + "/STATE/+"
+            # Subscribe to STATE of SCADA application
+            topic = "spBv1.0/" + self.spb_group_name + "/STATE/+"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
-
 
             # Publish Birth data
             self.publish_birth()
@@ -319,7 +427,7 @@ class MqttSparkPlugB_Entity():
 
     def _mqtt_on_message(self, client, userdata, msg):
 
-        #Check if loopback message
+        # Check if loopback message
         if self._loopback_topic == msg.topic:
                 return
 
@@ -328,11 +436,11 @@ class MqttSparkPlugB_Entity():
         logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
 
         # Parse the topic namespace ------------------------------------------------
-        topic = MqttSparkPlugB_Topic(msg.topic)  # Parse and get the topic object
+        topic = MqttSpbTopic(msg.topic)  # Parse and get the topic object
 
-        # Check that the namespace and domain are correct
+        # Check that the namespace and group are correct
         # NOTE: Should not be because we are subscribed to an specific topic, but good to check.
-        if topic.namespace != "spBv1.0" or topic.domain_id != self._domain_id:
+        if topic.namespace != "spBv1.0" or topic.group_name != self._spb_group_name:
             logger.error("%s - Incorrect MQTT spBv1.0 namespace and topic. Message ignored !" % self._entity_domain)
             return
 
@@ -344,27 +452,10 @@ class MqttSparkPlugB_Entity():
             return
 
         # Parse the received ProtoBUF data ------------------------------------------------
-        pb_payload = Payload()
+        payload = MqttSpbPayload().parse_payload(msg.payload)
 
-        try:
-            pb_payload.ParseFromString(msg.payload)
-            payload = MessageToDict(pb_payload)  # Convert it to DICT for easy handeling
-
-            # Add the metrics [TYPE_value] field into [value] field for convenience
-            if "metrics" in payload.keys():
-                for i in range(len(payload['metrics'])):
-                    for k in payload['metrics'][i].keys():
-                        if "Value" in k:
-                            payload['metrics'][i]['value'] = payload['metrics'][i][k]
-                            break
-
-            # Add the timestamp when the message was received
-            payload['timestamp_rx'] = msg_ts_rx
-
-        except Exception as e:
-            logger.error(
-                "%s - Could not parse MQTT CMD payload, messge ignored ! (reason: %s)" % (self._entity_domain, str(e)))
-            return
+        # Add the timestamp when the message was received
+        payload['timestamp_rx'] = msg_ts_rx
 
         # Execute the callback function if it is not None
         if self.on_message is not None:
@@ -414,8 +505,7 @@ class MqttSparkPlugB_Entity():
                 if self.on_command is not None:
                     self.on_command(payload)
 
-
-    class _ValueItem():
+    class _ValueItem:
         def __init__(self, name, value, timestamp=None):
             self.name = name
             self._value = value
@@ -435,7 +525,7 @@ class MqttSparkPlugB_Entity():
             return {"timestamp": self.timestamp,
                     "name": self.name,
                     "value": self._value,
-                    #"updated": self.is_updated
+                    # "updated": self.is_updated
                     }
 
         @property
@@ -445,7 +535,8 @@ class MqttSparkPlugB_Entity():
 
         @value.setter
         def value(self, value):
-            self.is_updated = True
+            if value != self._value:
+                self.is_updated = True
             self._value = value
 
         @property
@@ -454,7 +545,7 @@ class MqttSparkPlugB_Entity():
 
         @timestamp.setter
         def timestamp(self, value):
-            if value == None:
+            if value is None:
                 self.timestamp_update()
             else:
                 self._timestamp = int(value)
@@ -462,7 +553,7 @@ class MqttSparkPlugB_Entity():
         def timestamp_update(self):
             self.timestamp = int(time.time() * 1000)
 
-    class _ValuesGroup():
+    class _ValuesGroup:
 
         def __init__(self):
             self.values = []
@@ -516,39 +607,51 @@ class MqttSparkPlugB_Entity():
         def clear(self):
             self.values = []
 
-        def add_value(self, field_name, field_value, field_timestamp=None):
-            # If exist, update the value, otherwise create it
-            if not self.update_value(field_name, field_value, field_timestamp):
-                self.values.append(MqttSparkPlugB_Entity_Device._ValueItem(field_name, field_value, field_timestamp))
-            return
+        def set_value(self, name, value, timestamp=None):
 
-        def update_value(self, field_name, field_value, timestamp=None):
+            # If exist update the value, otherwise add the element.
             for item in self.values:
-                if item.name == field_name:
-                    item.value = field_value
+                if item.name == name:
+                    item.value = value
                     item.timestamp = timestamp
-                    item.is_updated = True
                     return True
-            return False
+
+            # item was not found, then add it to the list.
+            self.values.append(MqttSpbEntityDevice._ValueItem(name, value, timestamp))
+
+            return True
+
+        def set_dictionary(self, values: dict):
+            """
+                Import a list of values based on a dictionary FieldName:FieldValue
+            :param values:      Dictionary with fields-values
+            :return:            Result
+            """
+
+            # Update the list of values
+            for k,v in values.items():
+                self.set_value(k, v)
+
+            return True
 
 
-class MqttSparkPlugB_Entity_Device(MqttSparkPlugB_Entity):
+class MqttSpbEntityDevice(MqttSpbEntity):
 
-    def __init__(self, domain_id, edge_node_id, device_id,
+    def __init__(self, spb_group_name, spb_eon_name, spb_eon_device_name,
                  debug_info=False,
                  filter_cmd_msg=True):
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(domain_id, edge_node_id, device_id, debug_info, filter_cmd_msg)
+        super().__init__(spb_group_name, spb_eon_name, spb_eon_device_name, debug_info, filter_cmd_msg)
 
 
-class MqttSparkPlugB_Entity_EdgeNode(MqttSparkPlugB_Entity):
+class MqttSpbEntityEdgeNode(MqttSpbEntity):
 
-    def __init__(self, domain_id, edge_node_id, debug_info=False):
+    def __init__(self, spb_group_name, spb_eon_name, debug_info=False):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(domain_id, edge_node_id, None, debug_info)
+        super().__init__(spb_group_name, spb_eon_name, None, debug_info)
 
-    def publish_command_device(self, device_id, commands):
+    def publish_command_device(self, spb_eon_device_name, commands):
 
         if not self.is_connected():  # If not connected
             logger.warning(
@@ -568,7 +671,7 @@ class MqttSparkPlugB_Entity_EdgeNode(MqttSparkPlugB_Entity):
             addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.domain_id + "/DCMD/" + self._edge_node_id + "/" + device_id
+        topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + self._spb_eon_name + "/" + spb_eon_device_name
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
@@ -583,12 +686,12 @@ class MqttSparkPlugB_Entity_EdgeNode(MqttSparkPlugB_Entity):
         return False
 
 
-class MqttSparkPlugB_Entity_Application(MqttSparkPlugB_Entity_Device):
+class MqttSpbEntityApplication(MqttSpbEntityDevice):
 
-    def __init__(self, domain_id, app_entity_id, debug_info=False):
+    def __init__(self, spb_group_name, spb_app_entity_name, debug_info=False):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(domain_id, app_entity_id, None,
+        super().__init__(spb_group_name, spb_app_entity_name, None,
                          debug_info=debug_info,
                          filter_cmd_msg=False)
 
@@ -598,19 +701,19 @@ class MqttSparkPlugB_Entity_Application(MqttSparkPlugB_Entity_Device):
         # Call the parent method
         super()._mqtt_on_connect(client, userdata, flags, rc)
 
-        # Subscribe to all domain topics
+        # Subscribe to all group topics
         if rc == 0:
-            topic = "spBv1.0/" + self.domain_id + "/#"
+            topic = "spBv1.0/" + self.spb_group_name + "/#"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
 
-class MqttSparkPlugB_Entity_SCADA(MqttSparkPlugB_Entity):
+class MqttSpbEntityScada(MqttSpbEntity):
 
-    def __init__(self, domain_id, scada_id, debug_info=False):
+    def __init__(self, spb_group_name, spb_scada_name, debug_info=False):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(domain_id, scada_id, None,
+        super().__init__(spb_group_name, spb_scada_name, None,
                          debug_info=debug_info,
                          filter_cmd_msg=False,
                          entity_is_scada=True)
@@ -621,13 +724,13 @@ class MqttSparkPlugB_Entity_SCADA(MqttSparkPlugB_Entity):
         # Call the parent method
         super()._mqtt_on_connect(client, userdata, flags, rc)
 
-        # Subscribe to all domain topics
+        # Subscribe to all group topics
         if rc == 0:
-            topic = "spBv1.0/" + self.domain_id + "/#"
+            topic = "spBv1.0/" + self.spb_group_name + "/#"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
-    def publish_command_edge_node(self, edge_node_id, commands):
+    def publish_command_edge_node(self, spb_eon_name, commands):
 
         if not self.is_connected():  # If not connected
             logger.warning(
@@ -647,7 +750,7 @@ class MqttSparkPlugB_Entity_SCADA(MqttSparkPlugB_Entity):
             addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.domain_id + "/NCMD/" + edge_node_id
+        topic = "spBv1.0/" + self.spb_group_name + "/NCMD/" + spb_eon_name
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
@@ -661,7 +764,7 @@ class MqttSparkPlugB_Entity_SCADA(MqttSparkPlugB_Entity):
         logger.warning("%s - Could not publish COMMAND message to %s" % (self._entity_domain, topic))
         return False
 
-    def publish_command_device(self, edge_node_id, device_id, commands):
+    def publish_command_device(self, spb_eon_name, spb_eon_device_name, commands):
 
         if not self.is_connected():  # If not connected
             logger.warning(
@@ -681,7 +784,7 @@ class MqttSparkPlugB_Entity_SCADA(MqttSparkPlugB_Entity):
             addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.domain_id + "/DCMD/" + edge_node_id + "/" + device_id
+        topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + spb_eon_name + "/" + spb_eon_device_name
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
