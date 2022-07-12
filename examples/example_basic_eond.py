@@ -37,10 +37,17 @@ device.data.set_value("value", 0)
 # Commands
 device.commands.set_value("rebirth", False)
 
-# Connect to the broker --------------------------------------------
-# Upon connection, the BIRTH message will be sent and DEATH messages will be set
-print("Connecting to broker...")
-device.connect("localhost", 1883)
+# Try to connect to the broker --------------------------------------------
+_connected = False
+while not _connected:
+    print("Trying to connect to broker...")
+    _connected = device.connect("localhost8", 1883)
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+# Send birth message
+device.publish_birth()
 
 # Send some telemetry values ---------------------------------------
 value = 0  # Simple counter

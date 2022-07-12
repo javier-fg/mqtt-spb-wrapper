@@ -98,17 +98,24 @@ for k in telemetry:
     device.data.set_value(k, telemetry[k])
 
 # Connect to the broker.
-print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
-device.connect(_config_mqtt_host,
-               _config_mqtt_port,
-               _config_mqtt_user,
-               _config_mqtt_pass)
+_connected = False
+while not _connected:
+    print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
+    _connected = device.connect(_config_mqtt_host,
+                                _config_mqtt_port,
+                                _config_mqtt_user,
+                                _config_mqtt_pass)
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+device.publish_birth()  # Send birth message
 
 # Send some telemetry values
 value = 0   # Simple device field value ( simple counter )
 for i in range(10):
 
-    #Update the data value
+    # Update the data value
     print("Sending data - value : %d" % value)
     device.data.set_value("value", value)
     value += 1

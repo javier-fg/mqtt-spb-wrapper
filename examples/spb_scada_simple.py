@@ -114,11 +114,18 @@ scada.on_message = callback_scada_message
 scada.attribures.set_value("description", "SCADA application simple")
 
 # Connect to the broker.
-print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
-scada.connect(_config_mqtt_host,
-              _config_mqtt_port,
-              _config_mqtt_user,
-              _config_mqtt_pass)
+_connected = False
+while not _connected:
+    print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
+    _connected = scada.connect(_config_mqtt_host,
+                               _config_mqtt_port,
+                               _config_mqtt_user,
+                               _config_mqtt_pass)
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+scada.publish_birth()  # Send birth message
 
 # Loop forever
 while True:

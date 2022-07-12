@@ -32,9 +32,16 @@ app.attribures.set_value("description", "Test application")
 app.commands.set_value("rebirth", False)
 
 # Connect to the broker----------------------------------------------------------------
-# Upon connection, the BIRTH message will be sent and DEATH messages will be set
-print("Connecting to broker...")
-app.connect("localhost", 1883)
+_connected = False
+while not _connected:
+    print("Trying to connect to broker...")
+    _connected = app.connect("localhost8", 1883)
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+# Send birth message
+app.publish_birth()
 
 # Loop forever, messages and commands will be handeled by the callbacks
 while True:

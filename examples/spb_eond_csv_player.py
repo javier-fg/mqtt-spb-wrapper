@@ -105,10 +105,18 @@ for k in telemetry.keys():
 # Reply spB device data on the MQTT server ----------------------------------------------------------
 
 # Connect to the MQTT broker
-device.connect( config['mqtt']['host'],
-                config['mqtt']['port'],
-                config['mqtt']['user'],
-                config['mqtt']['pass'])
+_connected = False
+while not _connected:
+    print("Connecting to data broker %s:%d ..." % (config['mqtt']['host'], config['mqtt']['port']))
+    _connected = device.connect(config['mqtt']['host'],
+                                config['mqtt']['port'],
+                                config['mqtt']['user'],
+                                config['mqtt']['pass'])
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+device.publish_birth()  # Send birth message
 
 # Iterate device data
 for i in range(100):

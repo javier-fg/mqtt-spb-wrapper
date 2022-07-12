@@ -74,11 +74,18 @@ app.commands.set_value("ping", False)
 app.data.set_value("ping", False)
 
 # Connect to the broker.
-print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
-app.connect(_config_mqtt_host,
-            _config_mqtt_port,
-            _config_mqtt_user,
-            _config_mqtt_pass)
+_connected = False
+while not _connected:
+    print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
+    _connected = app.connect(_config_mqtt_host,
+                             _config_mqtt_port,
+                             _config_mqtt_user,
+                             _config_mqtt_pass)
+    if not _connected:
+        print("  Error, could not connect. Trying again in a few seconds ...")
+        time.sleep(3)
+
+app.publish_birth()  # Send birth message
 
 # Loop forever
 while True:

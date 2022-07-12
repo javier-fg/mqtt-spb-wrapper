@@ -243,7 +243,7 @@ class MqttSpbEntity:
             logger.warning("%s - Could not send publish_birth(), not connected to MQTT server" % self._entity_domain)
             return False
 
-        if self.is_empty():  # If no data (Telemetry, attributes, commands )
+        if self.is_empty():  # If no data (Data, attributes, commands )
             logger.warning(
                 "%s - Could not send publish_birth(), entity doesn't have data ( attributes, data, commands )" % self._entity_domain)
             return False
@@ -268,7 +268,7 @@ class MqttSpbEntity:
                 name = "ATTR/" + item.name
                 addMetric(payload, name, None, self._spb_data_type(item.value), item.value)
 
-        # Telemetry
+        # Data
         if not self.data.is_empty():
             for item in self.data.values:
                 name = "DATA/" + item.name
@@ -304,12 +304,12 @@ class MqttSpbEntity:
                 "%s - Could not send publish_telemetry(), not connected to MQTT server" % self._entity_domain)
             return False
 
-        if self.is_empty():  # If no data (Telemetry, attributes, commands )
+        if self.is_empty():  # If no data (Data, attributes, commands )
             logger.warning(
                 "%s - Could not send publish_telemetry(), entity doesn't have data ( attributes, data, commands )" % self._entity_domain)
             return False
 
-        # PAYLOAD - Telemetry Only
+        # PAYLOAD - Data Only
         payload = getDdataPayload()
 
         for item in self.data.values:
@@ -333,7 +333,7 @@ class MqttSpbEntity:
         logger.warning("%s - Could not publish DATA message, may be data no new data values?" % (self._entity_domain))
         return False
 
-    def connect(self, host='localhost', port=1883, user = "", password = ""):
+    def connect(self, host='localhost', port=1883, user="", password="", timeout=5):
 
         # If we are already connected, then exit
         if self.is_connected():
@@ -371,10 +371,16 @@ class MqttSpbEntity:
             logger.warning("%s - Could not connect to MQTT server (%s)" % (self._entity_domain, str(e)))
             return False
 
-        time.sleep(0.1)
         self._mqtt.loop_start()  # Start MQTT background task
+        time.sleep(0.1)
 
-        return True
+        # Wait some time to get connected
+        _timeout = time.time() + timeout
+        while not self.is_connected() or _timeout > time.time():
+            time.sleep(0.1)
+
+        # Return if we connected successfully
+        return self.is_connected()
 
     def disconnect(self):
 
@@ -411,9 +417,6 @@ class MqttSpbEntity:
             topic = "spBv1.0/" + self.spb_group_name + "/STATE/+"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
-
-            # Publish Birth data
-            self.publish_birth()
 
         else:
             logger.error(" %s - Could not connect to MQTT server !" % self._entity_domain)
