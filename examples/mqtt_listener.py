@@ -8,6 +8,8 @@ _config_mqtt_port = int(os.environ.get("MQTT_PORT", 1883))
 _config_mqtt_user = os.environ.get("MQTT_USER", "")
 _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
 
+_config_mqtt_topic = os.environ.get("MQTT_TOPIC", "#")
+
 
 def on_connect(client, userdata, flags, rc):
     """

@@ -35,7 +35,7 @@ def callback_command(payload):
         Callback function for received commands events.
     """
 
-    print("DEVICE received CMD: %s"%(payload))
+    print("DEVICE received CMD: %s" % payload)
 
     # Parse commands
     for cmd in payload['metrics']:
@@ -44,10 +44,10 @@ def callback_command(payload):
         name = cmd["name"]
         value = cmd["value"]
 
-        #Parse commands
+        # Parse commands
         if name == "ping" and value:  # Ping command
 
-            #Send response
+            # Send response
             device.data.set_value("ping", True)
             device.publish_data()
 
@@ -98,7 +98,7 @@ for k in telemetry:
     device.data.set_value(k, telemetry[k])
 
 # Connect to the broker.
-_connected = False
+_connected = device.is_connected()
 while not _connected:
     print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
     _connected = device.connect(_config_mqtt_host,

@@ -25,7 +25,6 @@ _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
 spb_groups = {}    # Variable to store the discord groups and entities
 
 topic = MqttSpbTopic()  # spB Topic parser
-payload = MqttSpbPayload()  # spB Payload parser
 
 
 def on_connect(client, userdata, flags, rc):
@@ -51,13 +50,12 @@ def on_message(client, userdata, msg):
         MQTT Callback function for received messages events
     """
 
-    global payload, topic, spb_groups
+    global topic, spb_groups
 
-    # print(datetime.datetime.utcnow().isoformat() + " " + msg.topic)
+    # print(msg.topic)
 
-    # Parse the topic and payload
+    # Parse the topic
     topic.parse_topic(msg.topic)
-    payload.parse_payload(msg.payload)
 
     group_name = topic.group_name
     eon_name = topic.eon_name
@@ -82,22 +80,11 @@ def on_message(client, userdata, msg):
     else:
         entity = spb_groups[group_name][eon_name][entity_name]  # Get the reference
 
-    # If BIRTH or DEATH message, parse the data into the entity object, for later display
-    if "DEATH" in topic.message_type:
-        entity.is_alive = False     # Set the status to offline
-    elif "BIRTH" in topic.message_type:
-        entity.is_alive = True
+    # BIRTH,  parse the data into the entity object, for later display
+    if "BIRTH" in topic.message_type:
 
-        # print(payload)
-
-        # Parse the payload metrics
-        for field in payload.payload['metrics']:
-            if field['name'].startswith("ATTR/"):
-                entity.attribures.set_value(field['name'].lstrip("ATTR/"), field['value'], field['timestamp'])
-            elif field['name'].startswith("DATA/"):
-                entity.data.set_value(field['name'].lstrip("DATA/"), field['value'], field['timestamp'])
-            elif field['name'].startswith("CMD/"):
-                entity.commands.set_value(field['name'].lstrip("CMD/"), field['value'], field['timestamp'])
+        # Parse payload
+        entity.deserialize_payload_birth(msg.payload)
 
 
 print("--- Sparkplug B entity discovery application ---")
@@ -115,7 +102,7 @@ print("Connecting to MQTT broker server - %s:%d" % (_config_mqtt_host, _config_m
 _mqtt_client.loop_start()
 
 # Wait some time to receive the persisted messages in the broker.
-time.sleep(3)
+time.sleep(4)
 
 # Stop the mqtt client
 _mqtt_client.loop_stop()
@@ -168,12 +155,7 @@ for group_name in spb_groups.keys():
 
             entity = spb_groups[group_name][eon_name][entity_name]  # Get entity object
 
-            if entity.is_alive:
-                _status = "ONLINE"
-            else:
-                _status = "OFFLINE"
-
-            print("  %s %s %s ( %s )" % (L1, L2, entity_name, _status))
+            print("  %s %s %s" % (L1, L2, entity_name))
 
             # Add the entity information
             out_dict[group_name][eon_name].append(entity.get_dictionary())
@@ -183,26 +165,50 @@ for group_name in spb_groups.keys():
             else:
                 L2 = PIPE
 
+            MAX_STR_LEN = 40    # Display only a maximum of characters
+
             # Print entity Attributes, commands, data
             print("  %s %s %s ATTR/" % (L1, L2, TEE))
             attributes = entity.attribures.get_dictionary()
             if len(attributes) != 0:
                 for field in attributes:
-                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], str(field['value'])))
+                    _value = field['value']
+                    if isinstance(_value, str):
+                        if len(_value) > MAX_STR_LEN:
+                            _value = _value[:MAX_STR_LEN].replace("\n", "").replace("\r", "") + " ..."
+                        else:
+                            _value = _value
+                    else:
+                        _value = str(_value)
+                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], _value))
 
             print("  %s %s %s CMD/" % (L1, L2, TEE))
             commands = entity.commands.get_dictionary()
             if len(commands) != 0:
                 for field in commands:
-                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], str(field['value'])))
+                    _value = field['value']
+                    if isinstance(_value, str):
+                        if len(_value) > MAX_STR_LEN:
+                            _value = _value[:MAX_STR_LEN].replace("\n", "").replace("\r", "") + " ..."
+                        else:
+                            _value = _value
+                    else:
+                        _value = str(_value)
+                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], _value))
 
             print("  %s %s %s DATA/" % (L1, L2, ELBOW))
             data = entity.data.get_dictionary()
             if len(data) != 0:
                 for field in data:
-                    print("  %s %s %s - %s : %s" % (L1, L2, SPACE,
-                                                         field['name'],
-                                                         str(field['value'])))
+                    _value = field['value']
+                    if isinstance(_value, str):
+                        if len(_value) > MAX_STR_LEN:
+                            _value = _value[:MAX_STR_LEN].replace("\n", "").replace("\r", "") + " ..."
+                        else:
+                            _value = _value
+                    else:
+                        _value = str(_value)
+                    print("  %s %s %s - %s : %s" % (L1, L2, SPACE, field['name'], _value))
 
 # Save discovery results into json file
 filename = "spb_discovery_results.json"
