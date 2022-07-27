@@ -442,7 +442,7 @@ class MqttSpbEntity:
 
         # Wait some time to get connected
         _timeout = time.time() + timeout
-        while not self.is_connected() or _timeout > time.time():
+        while not self.is_connected() and _timeout > time.time():
             time.sleep(0.1)
 
         # Return if we connected successfully
