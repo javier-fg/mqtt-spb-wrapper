@@ -399,7 +399,7 @@ class MqttSpbEntity:
         logger.warning("%s - Could not publish DATA message, may be data no new data values?" % (self._entity_domain))
         return False
 
-    def connect(self, host='localhost', port=1883, user="", password="", timeout=5):
+    def connect(self, host='localhost', port=1883, user="", password="", timeout=5, useTLS=True):
 
         # If we are already connected, then exit
         if self.is_connected():
@@ -409,6 +409,10 @@ class MqttSpbEntity:
         if self._mqtt is None:
             self._mqtt = mqtt.Client(userdata=self)
 
+        if useTLS:
+            self._mqtt.tls_set()
+        else:
+            pass
         self._mqtt.on_connect = self._mqtt_on_connect
         self._mqtt.on_disconnect = self._mqtt_on_disconnect
         self._mqtt.on_message = self._mqtt_on_message
