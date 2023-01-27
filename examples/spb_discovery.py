@@ -180,7 +180,7 @@ for group_name in spb_groups.keys():
                             _value = _value
                     else:
                         _value = str(_value)
-                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], _value))
+                    print("  %s %s %s - %s : %s (%s)" % (L1, L2, PIPE, field['name'], _value, type(field['value'])))
 
             print("  %s %s %s CMD/" % (L1, L2, TEE))
             commands = entity.commands.get_dictionary()
@@ -194,7 +194,7 @@ for group_name in spb_groups.keys():
                             _value = _value
                     else:
                         _value = str(_value)
-                    print("  %s %s %s - %s : %s" % (L1, L2, PIPE, field['name'], _value))
+                    print("  %s %s %s - %s : %s (%s)" % (L1, L2, PIPE, field['name'], _value, type(field['value'])))
 
             print("  %s %s %s DATA/" % (L1, L2, ELBOW))
             data = entity.data.get_dictionary()
@@ -208,7 +208,7 @@ for group_name in spb_groups.keys():
                             _value = _value
                     else:
                         _value = str(_value)
-                    print("  %s %s %s - %s : %s" % (L1, L2, SPACE, field['name'], _value))
+                    print("  %s %s %s - %s : %s (%s)" % (L1, L2, SPACE, field['name'], _value, type(field['value'])))
 
 # Save discovery results into json file
 filename = "spb_discovery_results.json"

@@ -399,7 +399,16 @@ class MqttSpbEntity:
         logger.warning("%s - Could not publish DATA message, may be data no new data values?" % (self._entity_domain))
         return False
 
-    def connect(self, host='localhost', port=1883, user="", password="", timeout=5, useTLS=True):
+    def connect(self,
+                host='localhost',
+                port=1883,
+                user="",
+                password="",
+				use_tls=False,
+                tls_ca_path="",
+                tls_cert_path="",
+                tls_key_path="",
+                timeout=5):
 
         # If we are already connected, then exit
         if self.is_connected():
@@ -409,16 +418,29 @@ class MqttSpbEntity:
         if self._mqtt is None:
             self._mqtt = mqtt.Client(userdata=self)
 
-        if useTLS:
-            self._mqtt.tls_set()
-        else:
-            pass
         self._mqtt.on_connect = self._mqtt_on_connect
         self._mqtt.on_disconnect = self._mqtt_on_disconnect
         self._mqtt.on_message = self._mqtt_on_message
 
         if user != "":
             self._mqtt.username_pw_set(user, password)
+
+        # If client certificates are provided
+        if tls_cert_path and tls_cert_path and tls_key_path:
+            logger.debug("Setting CA client certificates")
+            import ssl
+            self._mqtt.tls_set(ca_certs=tls_cert_path, certfile=tls_cert_path, keyfile=tls_key_path, cert_reqs=ssl.CERT_NONE)
+            # self._mqtt.tls_insecure_set(True)
+
+        #If only CA is proviced.
+        elif tls_cert_path:
+            logger.debug("Setting CA certificate")
+            self._mqtt.tls_set(ca_certs=tls_ca_path)
+
+        # If TLS is enabled
+        else:
+            if use_tls:
+                self._mqtt.tls_set()    # Enable TLS encryption
 
         # Entity DEATH message - last will message
         if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate

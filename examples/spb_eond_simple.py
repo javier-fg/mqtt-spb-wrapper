@@ -26,9 +26,14 @@ _config_spb_eon_device_name = os.environ.get("SPB_EON_DEVICE", "SimpleDev-01")
 _config_mqtt_topic = "#"    # Topic to listen
 _config_mqtt_host = os.environ.get("MQTT_HOST", "localhost")
 _config_mqtt_port = int(os.environ.get("MQTT_PORT", 1883))
+
 _config_mqtt_user = os.environ.get("MQTT_USER", "")
 _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
+_config_mqtt_tls_enabled = os.environ.get("MQTT_TLS_ENABLED", '').lower() in ('true', '1', 't')
 
+_config_mqtt_tls_ca = os.environ.get("MQTT_TLS_CA", "")
+_config_mqtt_tls_cert = os.environ.get("MQTT_TLS_CERT", "")
+_config_mqtt_tls_key = os.environ.get("MQTT_TLS_KEY", "")
 
 def callback_command(payload):
     """
@@ -74,9 +79,9 @@ device.on_message = callback_message    # Received messages
 device.on_command = callback_command    # Callback for received commands
 
 # Default device data values
-attributes = { "description" : "Simple EoN Device node",
+attributes = { "description": "Simple EoN Device node",
                "type": "Simulated device",
-               "version" : "0.01"}
+               "version": "0.01"}
 commands = {"ping": False}
 telemetry = {"value": 0,    # Simple value counter
              }
@@ -104,7 +109,11 @@ while not _connected:
     _connected = device.connect(_config_mqtt_host,
                                 _config_mqtt_port,
                                 _config_mqtt_user,
-                                _config_mqtt_pass)
+                                _config_mqtt_pass,
+                                _config_mqtt_tls_enabled,
+                                _config_mqtt_tls_ca,
+                                _config_mqtt_tls_cert,
+                                _config_mqtt_tls_key)
     if not _connected:
         print("  Error, could not connect. Trying again in a few seconds ...")
         time.sleep(3)
