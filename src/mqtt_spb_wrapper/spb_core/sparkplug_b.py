@@ -10,8 +10,9 @@
 # * Contributors:
 # *   Cirrus Link Solutions - initial implementation
 # ********************************************************************************/
-from .sparkplug_b_pb2 import Payload
+import sparkplug_b_pb2
 import time
+from sparkplug_b_pb2 import Payload
 
 seqNum = 0
 bdSeq = 0
@@ -93,7 +94,7 @@ class ParameterDataType:
 # Always request this before requesting the Node Birth Payload
 ######################################################################
 def getNodeDeathPayload():
-    payload = Payload()
+    payload = sparkplug_b_pb2.Payload()
     addMetric(payload, "bdSeq", None, MetricDataType.Int64, getBdSeqNum())
     return payload
 ######################################################################
@@ -104,7 +105,7 @@ def getNodeDeathPayload():
 def getNodeBirthPayload():
     global seqNum
     seqNum = 0
-    payload = Payload()
+    payload = sparkplug_b_pb2.Payload()
     payload.timestamp = int(round(time.time() * 1000))
     payload.seq = getSeqNum()
     addMetric(payload, "bdSeq", None, MetricDataType.Int64, --bdSeq)
@@ -115,7 +116,7 @@ def getNodeBirthPayload():
 # Get the DBIRTH payload
 ######################################################################
 def getDeviceBirthPayload():
-    payload = Payload()
+    payload = sparkplug_b_pb2.Payload()
     payload.timestamp = int(round(time.time() * 1000))
     payload.seq = getSeqNum()
     return payload
@@ -171,29 +172,45 @@ def initTemplateMetric(payload, name, alias, templateRef):
 
 ######################################################################
 # Helper method for adding metrics to a container which can be a
+# payload or a template with a timestamp
+######################################################################
+#def addMetric(container, name, alias, type, value):
+#    metric.timestamp = int(round(time.time() * 1000))
+#    return addMetric(container, name, alias, type, value, timestamp)
+
+######################################################################
+# Helper method for adding metrics to a container which can be a
 # payload or a template
 ######################################################################
-def addMetric(container, name, alias, type, value):
+def addMetric(container, name, alias, type, value, timestamp=int(round(time.time() * 1000))):
     metric = container.metrics.add()
     if name is not None:
         metric.name = name
     if alias is not None:
         metric.alias = alias
-    metric.timestamp = int(round(time.time() * 1000))
+    metric.timestamp = timestamp
 
     # print( "Type: " + str(type))
 
     if type == MetricDataType.Int8:
         metric.datatype = MetricDataType.Int8
+        if value < 0:
+            value = value + 2**8
         metric.int_value = value
     elif type == MetricDataType.Int16:
         metric.datatype = MetricDataType.Int16
+        if value < 0:
+            value = value + 2**16
         metric.int_value = value
     elif type == MetricDataType.Int32:
         metric.datatype = MetricDataType.Int32
+        if value < 0:
+            value = value + 2**32
         metric.int_value = value
     elif type == MetricDataType.Int64:
         metric.datatype = MetricDataType.Int64
+        if value < 0:
+            value = value + 2**64
         metric.long_value = value
     elif type == MetricDataType.UInt8:
         metric.datatype = MetricDataType.UInt8
