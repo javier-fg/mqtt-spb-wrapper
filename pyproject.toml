@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mqtt_spb_wrapper"
-version = "1.0.17"
+version = "1.0.18"
 description = "MQTT Sparkplug B v1.0 Wrapper"
 readme = "README.md"
 authors = [{ name = "Javier FG" }]
