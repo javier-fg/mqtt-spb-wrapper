@@ -34,12 +34,12 @@ Homepage = "https://github.com/javier-fg/mqtt-spb-wrapper"
 # Local install
 #   python3 -m pip install -e .
 #
-# Dependencies: python3.exe -m pip install pip-tools build twine
-# python.exe -m build
-# twine check dist/*
-# twine upload -r testpypi dist/*
+# Dependencies: python3 -m pip install pip-tools build twine
+# python3 -m build
+# python3 -m twine check dist/*
+# python3 -m twine upload -r testpypi dist/*
 #
 # Final upload:
-# twine upload dist/*
+# python3 -m twine upload dist/*
 #
 # pip3 install -i http://test.pypi.org/simple/ mqtt-spb-wrapper
