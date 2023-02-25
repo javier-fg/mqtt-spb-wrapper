@@ -10,9 +10,8 @@
 # * Contributors:
 # *   Cirrus Link Solutions - initial implementation
 # ********************************************************************************/
-import sparkplug_b_pb2
 import time
-from sparkplug_b_pb2 import Payload
+from .sparkplug_b_pb2 import Payload
 
 seqNum = 0
 bdSeq = 0
@@ -94,7 +93,7 @@ class ParameterDataType:
 # Always request this before requesting the Node Birth Payload
 ######################################################################
 def getNodeDeathPayload():
-    payload = sparkplug_b_pb2.Payload()
+    payload = Payload()
     addMetric(payload, "bdSeq", None, MetricDataType.Int64, getBdSeqNum())
     return payload
 ######################################################################
@@ -105,7 +104,7 @@ def getNodeDeathPayload():
 def getNodeBirthPayload():
     global seqNum
     seqNum = 0
-    payload = sparkplug_b_pb2.Payload()
+    payload = Payload()
     payload.timestamp = int(round(time.time() * 1000))
     payload.seq = getSeqNum()
     addMetric(payload, "bdSeq", None, MetricDataType.Int64, --bdSeq)
@@ -116,7 +115,7 @@ def getNodeBirthPayload():
 # Get the DBIRTH payload
 ######################################################################
 def getDeviceBirthPayload():
-    payload = sparkplug_b_pb2.Payload()
+    payload = Payload()
     payload.timestamp = int(round(time.time() * 1000))
     payload.seq = getSeqNum()
     return payload

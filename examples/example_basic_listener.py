@@ -3,9 +3,6 @@ from mqtt_spb_wrapper import *
 
 _DEBUG = True  # Enable debug messages
 
-print("--- Sparkplug B example - Application Entity Listener")
-
-
 def callback_app_message(topic, payload):
     print("APP received MESSAGE: %s - %s" % (topic, payload))
 

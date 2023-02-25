@@ -261,23 +261,23 @@ class MqttSpbEntity:
         else:  # Device
             payload = getDeviceBirthPayload()
 
-            # Attributes
+        # Attributes
         if not self.attribures.is_empty():
             for item in self.attribures.values:
                 name = "ATTR/" + item.name
-                addMetric(payload, name, None, self._spb_data_type(item.value), item.value)
+                addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
 
-            # Data
+        # Data
         if not self.data.is_empty():
             for item in self.data.values:
                 name = "DATA/" + item.name
-                addMetric(payload, name, None, self._spb_data_type(item.value), item.value)
+                addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
 
-            # Commands
+        # Commands
         if not self.commands.is_empty():
             for item in self.commands.values:
                 name = "CMD/" + item.name
-                addMetric(payload, name, None, self._spb_data_type(item.value), item.value)
+                addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
 
         payload_bytes = bytearray(payload.SerializeToString())
 
@@ -308,12 +308,15 @@ class MqttSpbEntity:
 
     def serialize_payload_data(self, send_all=False):
 
+        # Get a new payload object to add metrics to it.
         payload = getDdataPayload()
 
+        # Iterate for each data field.
         for item in self.data.values:
+
             # Only send those values that have been updated, or if send_all==True then send all.
             if send_all or item.is_updated:
-                addMetric(payload, item.name, None, self._spb_data_type(item.value), item.value)
+                addMetric(payload, item.name, None, self._spb_data_type(item.value), item.value, item.timestamp)
 
         payload_bytes = bytearray(payload.SerializeToString())
 
@@ -764,7 +767,7 @@ class MqttSpbEntityEdgeNode(MqttSpbEntity):
                 "%s - Could not send publish_command_device(), commands not provided or not valid. Please provide a dictionary of command:value" % self._entity_domain)
             return False
 
-        # PAYLOAD
+        # Get a new payload object, to add metrics
         payload = getDdataPayload()
 
         # Add the list of commands to the payload metrics
