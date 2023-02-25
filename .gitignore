@@ -120,4 +120,7 @@ sandbox
 pip-wheel-metadata/
 .pypirc
 *.json
+todo.md
+development/
+
 
