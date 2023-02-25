@@ -1,20 +1,24 @@
-# MQTT-SPB-WRAPPER
+# Python Sparkplug B Wrapper
 
-This python module implements a wrapper around the python Eclipse Tahu Sparkplug B v1.0 core modules, to easily create and handle MQTT Sparkplug B entities in an easy way.
+This python module implements an easy way to create Sparkplug B entities on Python, abstracting one level up the already existing python Eclipse Tahu Sparkplug B v1.0 core modules.
 
-The *mqtt-spb-wrapper* python module includes the following object classes to handle generic Sparkplug B entities in an easy way:
+The *mqtt-spb-wrapper* python module provides the following high level objects to handle generic Sparkplug B entities in an easy way:
 
-- **MqttSpbEntityEdgeNode** - End of Network (EoN) entity that can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD as well as to the STATUS messages from the SCADA application.
+- **MqttSpbEntityEdgeNode** - End of Network (EoN) entity 
+  - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD as well as to the STATUS messages from the SCADA application.
+- **MqttSpbEntityDevice** - End of Network Device (EoND) entity 
+  - This entity that can publish DDATA, DBIRTH, DDEATH messages and subscribe to its own commands DCMD as well as to the STATUS messages from the SCADA application.
+- **MqttSpbEntityApplication** - Application entity 
+  - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD, to the STATUS messages from the SCADA application as well as to all other messages from the Sparkplug B Domain ID.
+- **MqttSpbEntityScada** - SCADA entity 
+  - This entity can publish NDATA, NBIRTH, NDEATH messages as well as to send commands to all EoN and EoND (NCMD, DCMD), and subscribe to all other messages from the Sparkplug B Domain ID.
 
-- **MqttSpbEntityDevice** - End of Network Device (EoND) entity that can publish DDATA, DBIRTH, DDEATH messages and subscribe to its own commands DCMD as well as to the STATUS messages from the SCADA application.
+Other helper classes:
 
-- **MqttSpbEntityApplication** - Application entity that can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD, to the STATUS messages from the SCADA application as well as to all other messages from the Sparkplug B Domain ID.
-
-- **MqttSpbEntityScada** - SCADA entity that can publish NDATA, NBIRTH, NDEATH messages as well as to send commands to all EoN and EoND (NCMD, DCMD), and subscribe to all other messages from the Sparkplug B Domain ID.
-
-- **MqttSpbTopic** - Object to easily parse, decode and handle MQTT Sparkplug B topics.
-
-  
+- **MqttSpbPayload**
+  - Class to decode the Sparkplug B binary payloads ( Google protobuf format )
+- **MqttSpbTopic** 
+  - Class to parse, decode and handle MQTT Sparkplug B topics.
 
 ## Examples
 
