@@ -38,7 +38,7 @@ scada = MqttSpbEntityScada(spb_group_name= _config_spb_group_name,
                            debug_info=_DEBUG)
 
 # ATTRIBUTES
-scada.attribures.set_value("description", "SCADA application simple")
+scada.attributes.set_value("description", "SCADA application simple")
 
 # Connect to the broker.
 _connected = False

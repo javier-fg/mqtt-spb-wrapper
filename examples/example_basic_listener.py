@@ -23,7 +23,7 @@ app.on_command = callback_app_command
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
 
 # Attributes
-app.attribures.set_value("description", "Test application")
+app.attributes.set_value("description", "Test application")
 
 # Commands
 app.commands.set_value("rebirth", False)

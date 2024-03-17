@@ -79,7 +79,7 @@ def callback_scada_message(topic : MqttSpbTopic, payload):
 
                 # Update entity field value
                 if _type == "ATTR":
-                    entity.attribures.set_value(_name, _value)
+                    entity.attributes.set_value(_name, _value)
                 elif _type == "DATA":
                     entity.data.set_value(_name, _value)
                 elif _type == "CMD":
@@ -111,7 +111,7 @@ scada = MqttSpbEntityScada(spb_group_name= _config_spb_group_name,
 scada.on_message = callback_scada_message
 
 # ATTRIBUTES
-scada.attribures.set_value("description", "SCADA application simple")
+scada.attributes.set_value("description", "SCADA application simple")
 
 # Connect to the broker.
 _connected = False
