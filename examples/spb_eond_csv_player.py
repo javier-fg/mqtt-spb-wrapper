@@ -85,7 +85,7 @@ for k in config['data']['commands']:
 print("--- ATTRIBUTES")
 for k in attributes:
     print("  %s - %s"%(k, str(attributes[k])))
-    device.attribures.set_value(k, attributes[k])
+    device.attributes.set_value(k, attributes[k])
 
 print("--- COMMANDS")
 for k in commands:

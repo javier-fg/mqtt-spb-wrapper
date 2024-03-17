@@ -74,7 +74,7 @@ app.on_message = callback_app_message
 app.on_command = callback_app_command
 
 # ATTRIBUTES
-app.attribures.set_value("Info", "Test application")
+app.attributes.set_value("Info", "Test application")
 
 # COMMANDS
 app.commands.set_value("ping", False)

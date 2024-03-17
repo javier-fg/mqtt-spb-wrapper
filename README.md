@@ -58,9 +58,9 @@ device.on_command = callback_command  # Callback for received commands
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
 
 # Attributes
-device.attribures.set_value("description", "Simple EoN Device node")
-device.attribures.set_value("type", "Simulated-EoND-device")
-device.attribures.set_value("version", "0.01")
+device.attributes.set_value("description", "Simple EoN Device node")
+device.attributes.set_value("type", "Simulated-EoND-device")
+device.attributes.set_value("version", "0.01")
 
 # Data / Telemetry
 device.data.set_value("value", 0)
@@ -140,7 +140,7 @@ app.on_command = callback_app_command
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
 
 # Attributes
-app.attribures.set_value("description", "Test application")
+app.attributes.set_value("description", "Test application")
 
 # Commands
 app.commands.set_value("rebirth", False)

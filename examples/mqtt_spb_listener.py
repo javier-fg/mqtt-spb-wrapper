@@ -45,7 +45,7 @@ def on_message(client, userdata, msg):
         except:
             pass
 
-    print(datetime.datetime.utcnow().isoformat() + " " + msg.topic + "\n\t\t" + _data)
+    print(datetime.datetime.now().isoformat() + " " + msg.topic + "\n\t\t" + _data)
 
 
 # Set up the MQTT client connection that will listen to all Sparkplug B messages

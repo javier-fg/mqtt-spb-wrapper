@@ -169,7 +169,7 @@ for group_name in spb_groups.keys():
 
             # Print entity Attributes, commands, data
             print("  %s %s %s ATTR/" % (L1, L2, TEE))
-            attributes = entity.attribures.get_dictionary()
+            attributes = entity.attributes.get_dictionary()
             if len(attributes) != 0:
                 for field in attributes:
                     _value = field['value']
