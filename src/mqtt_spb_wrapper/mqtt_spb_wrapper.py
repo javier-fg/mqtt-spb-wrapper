@@ -533,7 +533,7 @@ class MqttSpbEntity:
         if self._loopback_topic == msg.topic:
                 return
 
-        msg_ts_rx = int(round(datetime.datetime.now().utcnow().time() * 1000))  # Save the current timestamp
+        msg_ts_rx = int(round(datetime.datetime.now().now().time() * 1000))  # Save the current timestamp
 
         logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
 
@@ -612,7 +612,7 @@ class MqttSpbEntity:
             self.name = name
             self._value = value
             if timestamp is None:
-                self._timestamp = int(datetime.datetime.now().utcnow().time() * 1000)
+                self._timestamp = int(datetime.datetime.now().now().time() * 1000)
             else:
                 self._timestamp = timestamp
             self.is_updated = True
@@ -654,7 +654,7 @@ class MqttSpbEntity:
                 self._timestamp = int(value)
 
         def timestamp_update(self):
-            self.timestamp = int(datetime.datetime.utcnow().timestamp() * 1000)
+            self.timestamp = int(datetime.datetime.now().timestamp() * 1000)
 
     class _ValuesGroup:
 
