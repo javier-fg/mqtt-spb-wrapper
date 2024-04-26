@@ -735,6 +735,10 @@ class MqttSpbEntity:
 
         def set_value(self, name, value, timestamp=None):
 
+            # If value is set to None, ignore the update
+            if value is None:
+                return False
+
             # If exist update the value, otherwise add the element.
             for item in self.values:
                 if item.name == name:
@@ -744,8 +748,13 @@ class MqttSpbEntity:
 
             # item was not found, then add it to the list.
             self.values.append(MqttSpbEntityDevice._ValueItem(name, value, timestamp))
-
             return True
+
+        def remove_value(self, name):
+            # If exist remove the value by its name.
+            original_count = len(self.values)
+            self.values = [value for value in self.values if value.name != name]
+            return len(self.values) < original_count
 
         def set_dictionary(self, values: dict, timestamp=None):
             """
