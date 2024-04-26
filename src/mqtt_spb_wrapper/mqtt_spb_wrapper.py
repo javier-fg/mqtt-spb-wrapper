@@ -411,6 +411,7 @@ class MqttSpbEntity:
                 tls_ca_path="",
                 tls_cert_path="",
                 tls_key_path="",
+                tls_insecure=False,
                 timeout=5):
 
         # If we are already connected, then exit
@@ -429,14 +430,20 @@ class MqttSpbEntity:
             self._mqtt.username_pw_set(user, password)
 
         # If client certificates are provided
-        if tls_cert_path and tls_cert_path and tls_key_path:
+        if tls_ca_path and tls_cert_path and tls_key_path:
             logger.debug("Setting CA client certificates")
-            import ssl
-            self._mqtt.tls_set(ca_certs=tls_cert_path, certfile=tls_cert_path, keyfile=tls_key_path, cert_reqs=ssl.CERT_NONE)
-            # self._mqtt.tls_insecure_set(True)
+
+            if tls_insecure:
+                logger.debug("Setting CA client certificates - IMPORTANT CA insecure mode ( use only for testing )")
+                import ssl
+                self._mqtt.tls_set(ca_certs=tls_ca_path, certfile=tls_cert_path, keyfile=tls_key_path, cert_reqs=ssl.CERT_NONE)
+                self._mqtt.tls_insecure_set(True)
+            else:
+                logger.debug("Setting CA client certificates")
+                self._mqtt.tls_set(ca_certs=tls_ca_path, certfile=tls_cert_path, keyfile=tls_key_path)
 
         #If only CA is proviced.
-        elif tls_cert_path:
+        elif tls_ca_path:
             logger.debug("Setting CA certificate")
             self._mqtt.tls_set(ca_certs=tls_ca_path)
 
