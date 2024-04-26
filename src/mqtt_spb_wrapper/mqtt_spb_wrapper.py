@@ -160,7 +160,7 @@ class MqttSpbEntity:
         self.is_alive = True
         self.is_birth_published = False
 
-        self.attribures = self._ValuesGroup()
+        self.attributes = self._ValuesGroup()
         self.data = self._ValuesGroup()
         self.commands = self._ValuesGroup()
 
@@ -207,12 +207,12 @@ class MqttSpbEntity:
         if self._spb_eon_device_name is not None:
             temp['spb_eon_device_name'] = self._spb_eon_device_name
         temp['data'] = self.data.get_dictionary()
-        temp['attributes'] = self.attribures.get_dictionary()
+        temp['attributes'] = self.attributes.get_dictionary()
         temp['commands'] = self.commands.get_dictionary()
         return temp
 
     def is_empty(self):
-        if self.data.is_empty() and self.attribures.is_empty() and self.commands.is_empty():
+        if self.data.is_empty() and self.attributes.is_empty() and self.commands.is_empty():
             return True
         return False
 
@@ -262,8 +262,8 @@ class MqttSpbEntity:
             payload = getDeviceBirthPayload()
 
         # Attributes
-        if not self.attribures.is_empty():
-            for item in self.attribures.values:
+        if not self.attributes.is_empty():
+            for item in self.attributes.values:
                 name = "ATTR/" + item.name
                 addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
 
@@ -294,7 +294,7 @@ class MqttSpbEntity:
 
                 if field['name'].startswith("ATTR/"):
                     field['name'] = field['name'][5:]
-                    self.attribures.set_value(field['name'], field['value'], field['timestamp'])  # update field
+                    self.attributes.set_value(field['name'], field['value'], field['timestamp'])  # update field
 
                 elif field['name'].startswith("CMD/"):
                     field['name'] = field['name'][4:]
