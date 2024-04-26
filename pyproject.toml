@@ -19,7 +19,7 @@ classifiers = [
 keywords = ["sparkplug", "mqtt", "ecliplse", "tahu", "iiot", "iot"]
 dependencies = [
     "paho_mqtt==1.6.1",
-    "protobuf==3.20.1",
+    "protobuf==3.20.3",
 ]
 requires-python = ">=3.7"
 
