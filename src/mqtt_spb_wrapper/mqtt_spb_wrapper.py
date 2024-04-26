@@ -477,11 +477,27 @@ class MqttSpbEntity:
         # Return if we connected successfully
         return self.is_connected()
 
-    def disconnect(self):
+    def disconnect(self, skip_death_publish=False):
 
         logger.info("%s - Disconnecting from MQTT server" % (self._entity_domain))
 
         if self._mqtt is not None:
+
+            # Send the DEATH message
+            if not skip_death_publish:
+                if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
+                    topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
+                    self._mqtt.publish(topic, "OFFLINE".encode("utf-8"), 0, False)
+                else:  # Normal node
+                    payload = getNodeDeathPayload()
+                    payload_bytes = bytearray(payload.SerializeToString())
+                    if self._spb_eon_device_name is None:  # EoN
+                        topic = "spBv1.0/" + self.spb_group_name + "/NDEATHx/" + self._spb_eon_name
+                    else:
+                        topic = "spBv1.0/" + self.spb_group_name + "/DDEATHx/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+                    self._mqtt.publish(topic, payload_bytes, 0, False)  # Set message
+
+            # Disconnect from MQTT broker
             self._mqtt.loop_stop()
             time.sleep(0.1)
             self._mqtt.disconnect()
@@ -533,7 +549,7 @@ class MqttSpbEntity:
         if self._loopback_topic == msg.topic:
                 return
 
-        msg_ts_rx = int(round(datetime.datetime.now().utcnow().time() * 1000))  # Save the current timestamp
+        msg_ts_rx = int(datetime.datetime.utcnow().timestamp() * 1000)  # Save the current timestamp
 
         logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
 
@@ -612,7 +628,7 @@ class MqttSpbEntity:
             self.name = name
             self._value = value
             if timestamp is None:
-                self._timestamp = int(datetime.datetime.now().utcnow().time() * 1000)
+                self._timestamp = int(datetime.datetime.utcnow().timestamp() * 1000)
             else:
                 self._timestamp = timestamp
             self.is_updated = True
