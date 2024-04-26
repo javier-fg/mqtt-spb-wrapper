@@ -334,7 +334,7 @@ class MqttSpbEntity:
 
         return payload
 
-    def publish_birth(self):
+    def publish_birth(self, QoS=0):
 
         if not self.is_connected():  # If not connected
             logger.warning("%s - Could not send publish_birth(), not connected to MQTT server" % self._entity_domain)
@@ -349,7 +349,7 @@ class MqttSpbEntity:
         if self._entity_is_scada:
             topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
             self._loopback_topic = topic
-            self._mqtt.publish(topic, "ONLINE".encode("utf-8"), 0, True)
+            self._mqtt.publish(topic, "ONLINE".encode("utf-8"), QoS, True)
             logger.info("%s - Published STATE BIRTH message " % (self._entity_domain))
             return
 
@@ -360,13 +360,13 @@ class MqttSpbEntity:
         else:
             topic = "spBv1.0/" + self.spb_group_name + "/DBIRTH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
         self._loopback_topic = topic
-        self._mqtt.publish(topic, payload_bytes, 0, True)
+        self._mqtt.publish(topic, payload_bytes, QoS, True)
 
         logger.info("%s - Published BIRTH message" % (self._entity_domain))
 
         self.is_birth_published = True
 
-    def publish_data(self, send_all=False):
+    def publish_data(self, send_all=False, QoS=0):
         """
             Send the new updated data to the MQTT broker as a Sparkplug B DATA message.
 
@@ -394,7 +394,7 @@ class MqttSpbEntity:
             else:
                 topic = "spBv1.0/" + self.spb_group_name + "/DDATA/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._loopback_topic = topic
-            self._mqtt.publish(topic, payload_bytes, 0, False)
+            self._mqtt.publish(topic, payload_bytes, QoS, False)
 
             logger.info("%s - Published DATA message %s" % (self._entity_domain, topic))
             return True
