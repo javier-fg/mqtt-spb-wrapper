@@ -122,5 +122,6 @@ pip-wheel-metadata/
 *.json
 todo.md
 development/
+spb_discovery_results.json
 
 

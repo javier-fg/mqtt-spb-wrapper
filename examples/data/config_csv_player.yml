@@ -1,0 +1,44 @@
+# MQTT server configuration values
+mqtt:
+    host: "localhost"
+    port: 1883
+    user: ""
+    pass: ""
+
+# Sparkplug B v1.0 configuration values
+sparkplugb:
+    group_name : "GroupTest"
+    edge_node_name: "Gateway-001"
+    device_name: "SmartMeter3"
+
+# Data configuration values
+data:
+
+    # File path. It can be a CSV or ZIP file.
+    file : "data/220401_home_powermeter-pzem-016_6618fc4f116056e489ce82df27416437.zip"
+
+    # Replay data interval in seconds
+    replay_interval : 1.0
+    
+    # ------- spB Message fields (DATA, CMD, ATTR)-----------------
+
+    # CSV column - defined
+    # Static value -
+    data:
+        Power : "file.power_active"
+        Energy : "file.energy"
+        Current : "file.current"
+        Voltage : "file.voltage"
+        Frequency : "file.frequency"
+        PowerFactor : "file.powerfact"
+        StaticValue : 123.321
+
+    attributes:
+        DeviceID : "file.device-uid"
+        SerialNumber : "file.device-sn"
+        SerialName : "file.device-name"
+        Description: "This is a description"
+        Number : 123.123
+
+    commands:
+        Echo : False
