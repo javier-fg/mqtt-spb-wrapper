@@ -13,7 +13,7 @@ from mqtt_spb_wrapper import *
 _DEBUG = False   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_GROUP", "*")
+_config_spb_domain_name = os.environ.get("SPB_DOMAIN", "*")
 
 # MQTT Configuration
 _config_mqtt_host = os.environ.get("MQTT_HOST", "localhost")
@@ -24,7 +24,7 @@ _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
 # Global Variables -------------------------------------------------------
 spb_groups = {}    # Variable to store the discord groups and entities
 
-topic = MqttSpbTopic()  # spB Topic parser
+topic = SpbTopic()  # spB Topic parser
 
 
 def on_connect(client, userdata, flags, rc):

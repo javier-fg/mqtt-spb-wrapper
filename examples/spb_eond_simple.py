@@ -58,6 +58,9 @@ def callback_command(payload):
 
             print("  CMD Ping received - Sending response")
 
+def callback_cmd_test(value):
+    print("   CMD test received - " + str(value))
+
 def callback_message(topic, payload):
     """
         Callback function for received messages events
@@ -69,19 +72,19 @@ def callback_message(topic, payload):
 print("--- Sparkplug B example - End of Node Device - Simple")
 
 # Create the spB entity object
-device = MqttSpbEntityDevice(_config_spb_domain_name,
-                             _config_spb_eon_name,
-                             _config_spb_eon_device_name,
-                             _DEBUG)
+device = MqttSpbEntityDevice(spb_domain_name=_config_spb_domain_name,
+                             spb_eon_name=_config_spb_eon_name,
+                             spb_eon_device_name=_config_spb_eon_device_name,
+                             debug_info=_DEBUG)
 
 # Configure callbacks
 device.on_message = callback_message    # Received messages
 device.on_command = callback_command    # Callback for received commands
 
 # Default device data values
-attributes = { "description": "Simple EoN Device node",
-               "type": "Simulated device",
-               "version": "0.01"}
+attributes = {"description": "Simple EoN Device node",
+              "type": "Simulated device",
+              "version": "0.01"}
 commands = {"ping": False}
 telemetry = {"value": 0,    # Simple value counter
              }
@@ -89,20 +92,24 @@ telemetry = {"value": 0,    # Simple value counter
 # Console print the device data and fill device fields
 print("--- ATTRIBUTES")
 for k in attributes:
-    print("  %s - %s"%(k, str(attributes[k])))
     device.attributes.set_value(k, attributes[k])
+for k in device.attributes.get_dictionary():
+    print("  %s - %s" % (k["name"], k['value']))
 
 print("--- COMMANDS")
+device.commands.set_value("test", False, callback=callback_cmd_test)
 for k in commands:
-    print("  %s - %s"%(k, str(commands[k])))
     device.commands.set_value(k, commands[k])
+for k in device.commands.get_dictionary():
+    print("  %s - %s" % (k["name"], k['value']))
 
 print("--- TELEMETRY")
 for k in telemetry:
-    print("  %s - %s"%(k, str(telemetry[k])))
     device.data.set_value(k, telemetry[k])
+for k in device.data.get_dictionary():
+    print("  %s - %s" % (k["name"], k['value']))
 
-# Connect to the broker.
+# Connect to the broker
 _connected = device.is_connected()
 while not _connected:
     print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))

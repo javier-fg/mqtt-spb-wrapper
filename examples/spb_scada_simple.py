@@ -36,7 +36,7 @@ print("--- Sparkplug B example - SCADA Entity Simple")
 entities = {}   # List of detected spB entities
 
 
-def callback_scada_message(topic : MqttSpbTopic, payload):
+def callback_scada_message(topic : SpbTopic, payload):
     """
         Callback function on spB received messages - Used to discover the spB entities
     """
