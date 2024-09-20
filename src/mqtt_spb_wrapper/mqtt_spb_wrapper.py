@@ -1,13 +1,15 @@
 import time
 import datetime
 import logging
+from typing import Dict, Any
+
 import paho.mqtt.client as mqtt
 from google.protobuf.json_format import MessageToDict
 
-from .spb_core import getDdataPayload, getNodeDeathPayload, getNodeBirthPayload, getDeviceBirthPayload
-from .spb_core import getSeqNum, getBdSeqNum
-from .spb_core import addMetric, MetricDataType
-from .spb_core import Payload
+from spb_core import getDdataPayload, getNodeDeathPayload, getNodeBirthPayload, getDeviceBirthPayload
+from spb_core import getSeqNum, getBdSeqNum
+from spb_core import addMetric, MetricDataType
+from spb_core import Payload
 
 # Application logger
 logger = logging.getLogger("MQTTSPB_ENTITY")
@@ -96,6 +98,9 @@ class MqttSpbPayload:
     def __repr__(self):
         return str(self.payload)
 
+    def asDict(self):
+        return dict(self.payload)
+
     def parse_payload(self, payload_data):
         """
            Parse MQTT sparkplug B payload bytes ( protobuff ) into JSON
@@ -139,7 +144,8 @@ class MqttSpbPayload:
 
 class MqttSpbEntity:
 
-    def __init__(self, spb_group_name, spb_eon_name,
+    def __init__(self,
+                 spb_domain_name, spb_eon_name,
                  spb_eon_device_name= None,
                  debug_info=False,
                  filter_cmd_msg=True,
@@ -153,11 +159,6 @@ class MqttSpbEntity:
 
         # Public members -----------
 
-        self.entity_uid = None        # Generic attributes
-        self.entity_class = None
-        self.entity_subclass = None
-
-        self.is_alive = True
         self.is_birth_published = False
 
         self.attributes = self._ValuesGroup()
@@ -171,14 +172,14 @@ class MqttSpbEntity:
 
         # Private members -----------
 
-        self._spb_group_name = spb_group_name
+        self._spb_domain_name = spb_domain_name
         self._spb_eon_name = spb_eon_name
         self._spb_eon_device_name = spb_eon_device_name
 
         if spb_eon_device_name is None:
-            self._entity_domain = "spBv.10.%s.%s" % (self._spb_group_name, self._spb_eon_name)
+            self._entity_domain = "spBv.10.%s.%s" % (self._spb_domain_name, self._spb_eon_name)
         else:
-            self._entity_domain = "spBv.10.%s.%s.%s" % (self._spb_group_name, self._spb_eon_name, self._spb_eon_device_name)
+            self._entity_domain = "spBv.10.%s.%s.%s" % (self._spb_domain_name, self._spb_eon_name, self._spb_eon_device_name)
 
         if spb_eon_device_name is None:
             self._entity_name = self._spb_eon_name
@@ -202,7 +203,7 @@ class MqttSpbEntity:
 
     def get_dictionary(self):
         temp = {}
-        temp['spb_group_name'] = self._spb_group_name
+        temp['spb_domain_name'] = self._spb_domain_name
         temp['spb_eon_name'] = self._spb_eon_name
         if self._spb_eon_device_name is not None:
             temp['spb_eon_device_name'] = self._spb_eon_device_name
@@ -217,8 +218,8 @@ class MqttSpbEntity:
         return False
 
     @property
-    def spb_group_name(self):
-        return self._spb_group_name
+    def spb_domain_name(self):
+        return self._spb_domain_name
 
     @property
     def spb_eon_name(self):
@@ -327,7 +328,6 @@ class MqttSpbEntity:
         payload = MqttSpbPayload(data_bytes).payload
 
         if payload is not None:
-
             #Iterate over the metrics to update the data fields
             for field in payload.get('metrics', []):
                 self.data.set_value(field['name'], field['value'], field['timestamp']) # update field
@@ -347,7 +347,7 @@ class MqttSpbEntity:
 
         # If it is a type entity SCADA, change the BIRTH certificate
         if self._entity_is_scada:
-            topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
+            topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
             self._loopback_topic = topic
             self._mqtt.publish(topic, "ONLINE".encode("utf-8"), QoS, True)
             logger.info("%s - Published STATE BIRTH message " % (self._entity_domain))
@@ -356,9 +356,9 @@ class MqttSpbEntity:
         # Publish BIRTH message
         payload_bytes = self.serialize_payload_birth()
         if self._spb_eon_device_name is None:  # EoN
-            topic = "spBv1.0/" + self.spb_group_name + "/NBIRTH/" + self._spb_eon_name
+            topic = "spBv1.0/" + self.spb_domain_name + "/NBIRTH/" + self._spb_eon_name
         else:
-            topic = "spBv1.0/" + self.spb_group_name + "/DBIRTH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+            topic = "spBv1.0/" + self.spb_domain_name + "/DBIRTH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
         self._loopback_topic = topic
         self._mqtt.publish(topic, payload_bytes, QoS, True)
 
@@ -390,9 +390,9 @@ class MqttSpbEntity:
             payload_bytes = self.serialize_payload_data(send_all)   # Get the data payload
 
             if self._spb_eon_device_name is None:  # EoN
-                topic = "spBv1.0/" + self.spb_group_name + "/NDATA/" + self._spb_eon_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/NDATA/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.spb_group_name + "/DDATA/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/DDATA/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._loopback_topic = topic
             self._mqtt.publish(topic, payload_bytes, QoS, False)
 
@@ -413,6 +413,8 @@ class MqttSpbEntity:
                 tls_key_path="",
                 tls_insecure=False,
                 timeout=5):
+
+
 
         # If we are already connected, then exit
         if self.is_connected():
@@ -454,16 +456,18 @@ class MqttSpbEntity:
 
         # Entity DEATH message - last will message
         if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-            topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
+            topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
             self._mqtt.will_set(topic, "OFFLINE".encode("utf-8"), 0, True)  # Set message
         else:  # Normal node
             payload = getNodeDeathPayload()
             payload_bytes = bytearray(payload.SerializeToString())
             if self._spb_eon_device_name is None:  # EoN
-                topic = "spBv1.0/" + self.spb_group_name + "/NDEATH/" + self._spb_eon_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/NDEATH/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.spb_group_name + "/DDEATH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/DDEATH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._mqtt.will_set(topic, payload_bytes, 0, True)  # Set message
+
+
 
         # MQTT Connect
         logger.info("%s - Trying to connect MQTT server %s:%d" % (self._entity_domain, host, port))
@@ -493,15 +497,15 @@ class MqttSpbEntity:
             # Send the DEATH message
             if not skip_death_publish:
                 if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-                    topic = "spBv1.0/" + self.spb_group_name + "/STATE/" + self._spb_eon_name
+                    topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
                     self._mqtt.publish(topic, "OFFLINE".encode("utf-8"), 0, False)
                 else:  # Normal node
                     payload = getNodeDeathPayload()
                     payload_bytes = bytearray(payload.SerializeToString())
                     if self._spb_eon_device_name is None:  # EoN
-                        topic = "spBv1.0/" + self.spb_group_name + "/NDEATHx/" + self._spb_eon_name
+                        topic = "spBv1.0/" + self.spb_domain_name + "/NDEATH/" + self._spb_eon_name
                     else:
-                        topic = "spBv1.0/" + self.spb_group_name + "/DDEATHx/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+                        topic = "spBv1.0/" + self.spb_domain_name + "/DDEATH/" + self._spb_eon_name + "/" + self._spb_eon_device_name
                     self._mqtt.publish(topic, payload_bytes, 0, False)  # Set message
 
             # Disconnect from MQTT broker
@@ -525,14 +529,14 @@ class MqttSpbEntity:
             # Subscribing in on_connect() means that if we lose the connection and
             # reconnect then subscriptions will be renewed.
             if self._spb_eon_device_name is None:  # EoN
-                topic = "spBv1.0/" + self.spb_group_name + "/NCMD/" + self._spb_eon_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/NCMD/" + self._spb_eon_name
             else:
-                topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + self._spb_eon_name + "/" + self._spb_eon_device_name
+                topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + self._spb_eon_name + "/" + self._spb_eon_device_name
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
             # Subscribe to STATE of SCADA application
-            topic = "spBv1.0/" + self.spb_group_name + "/STATE/+"
+            topic = "spBv1.0/" + self.spb_domain_name + "/STATE/+"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
@@ -565,7 +569,7 @@ class MqttSpbEntity:
 
         # Check that the namespace and group are correct
         # NOTE: Should not be because we are subscribed to an specific topic, but good to check.
-        if topic.namespace != "spBv1.0" or topic.group_name != self._spb_group_name:
+        if topic.namespace != "spBv1.0" or topic.group_name != self._spb_domain_name:
             logger.error("%s - Incorrect MQTT spBv1.0 namespace and topic. Message ignored !" % self._entity_domain)
             return
 
@@ -712,6 +716,11 @@ class MqttSpbEntity:
                     temp.append(item.value)
             return temp
 
+        def keys(self):
+            return self.get_name_list()
+        def values(self):
+            return self.get_value_list()
+
         def get_value(self, field_name):
             if len(self.values) > 0:
                 for item in self.values:
@@ -773,19 +782,19 @@ class MqttSpbEntity:
 
 class MqttSpbEntityDevice(MqttSpbEntity):
 
-    def __init__(self, spb_group_name, spb_eon_name, spb_eon_device_name,
+    def __init__(self, spb_domain_name, spb_eon_name, spb_eon_device_name,
                  debug_info=False,
                  filter_cmd_msg=True):
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(spb_group_name, spb_eon_name, spb_eon_device_name, debug_info, filter_cmd_msg)
+        super().__init__(spb_domain_name, spb_eon_name, spb_eon_device_name, debug_info, filter_cmd_msg)
 
 
 class MqttSpbEntityEdgeNode(MqttSpbEntity):
 
-    def __init__(self, spb_group_name, spb_eon_name, debug_info=False):
+    def __init__(self, spb_domain_name, spb_eon_name, debug_info=False):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(spb_group_name, spb_eon_name, None, debug_info)
+        super().__init__(spb_domain_name, spb_eon_name, None, debug_info)
 
     def publish_command_device(self, spb_eon_device_name, commands):
 
@@ -807,7 +816,7 @@ class MqttSpbEntityEdgeNode(MqttSpbEntity):
             addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + self._spb_eon_name + "/" + spb_eon_device_name
+        topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + self._spb_eon_name + "/" + spb_eon_device_name
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
@@ -824,10 +833,10 @@ class MqttSpbEntityEdgeNode(MqttSpbEntity):
 
 class MqttSpbEntityApplication(MqttSpbEntityDevice):
 
-    def __init__(self, spb_group_name, spb_app_entity_name, debug_info=False):
+    def __init__(self, spb_domain_name, spb_app_entity_name, debug_info=False):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(spb_group_name, spb_app_entity_name, None,
+        super().__init__(spb_domain_name, spb_app_entity_name, None,
                          debug_info=debug_info,
                          filter_cmd_msg=False)
 
@@ -839,22 +848,270 @@ class MqttSpbEntityApplication(MqttSpbEntityDevice):
 
         # Subscribe to all group topics
         if rc == 0:
-            topic = "spBv1.0/" + self.spb_group_name + "/#"
+            topic = "spBv1.0/" + self.spb_domain_name + "/#"
             self._mqtt.subscribe(topic)
             logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
 
 class MqttSpbEntityScada(MqttSpbEntity):
 
-    def __init__(self, spb_group_name, spb_scada_name, debug_info=False):
+    class EntityScadaEdgeDevice (MqttSpbEntity):
+        '''
+            # Entity Scada Edge Device (EoND) class
+
+            This class is used to represent virtually an EoND entity from a SCADA application.
+            The scada application will automatically parse the received entity data into its
+            representation, allowing you to easly interact with the entity ( via commands ) or
+            to get the lates telemetry and attribute values.
+
+            This class allows you to:
+              - Subscribe to callback events when data from the entity is received ( BIRTH, DATA, DEATH )
+              - Get the latest data values ( entity.data or entity.attributes )
+              - Send a Command/s to the physical entity
+        '''
+
+        def __init__(self,
+                     spb_domain_name, spb_eon_name, spb_eon_device_name,
+                     scada_entity,
+                     callback_birth=None, callback_data=None, callback_death=None,
+                     debug_info=False):
+
+            super().__init__(spb_domain_name=spb_domain_name,
+                             spb_eon_name=spb_eon_name,
+                             spb_eon_device_name=spb_eon_device_name,
+                             debug_info=debug_info)
+
+            self.scada = scada_entity  # Save reference to the scada entity
+
+            self.callback_birth = callback_birth  # Save callback function references
+            self.callback_data = callback_data
+            self.callback_death = callback_death
+
+            self._is_alive = False  # Device is alive ( BIRTH + DATA ) or not ( DEATH )
+
+            # Console Logger
+            self._logger = logging.getLogger("MQTTSPB_SCADA_EoN")
+            handler_log = logging.StreamHandler()
+            handler_log.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s | %(message)s'))
+            self._logger.addHandler(handler_log)
+            if debug_info:
+                self._logger.setLevel(logging.DEBUG)
+            else:
+                self._logger.setLevel(logging.ERROR)
+
+        def is_alive(self):
+            return self._is_alive
+
+        def send_command(self, name, value, force=False):
+            return self.send_commands({name: value}, force)
+
+        def send_commands(self, commands, force=False):
+
+            # Command Check - If not part of entity commands, through an error.
+            if not force:
+                for k in commands:
+                    if k not in self.commands.get_name_list():
+                        self._logger.error("%s - Command %s not sent, unknown device command." % (self._entity_domain, k))
+                        return False
+
+            # Send commands via SCADA application
+            self.scada.send_commands(commands, self.spb_eon_name, self.spb_eon_device_name)
+
+        def connect(self,
+                host='localhost',
+                port=1883,
+                user="",
+                password="",
+				use_tls=False,
+                tls_ca_path="",
+                tls_cert_path="",
+                tls_key_path="",
+                tls_insecure=False,
+                timeout=5):
+            raise NotImplementedError("This method has been removed")
+
+        def disconnect(self, skip_death_publish=False):
+            raise NotImplementedError("This class method has been removed")
+
+        def is_connected(self):
+            raise NotImplementedError("This class method has been removed")
+
+        def publish_birth(self, QoS=0):
+            raise NotImplementedError("This class method has been removed")
+
+        def publish_data(self, send_all=False, QoS=0):
+            raise NotImplementedError("This class method has been removed")
+
+    class EntityScadaEdgeNode (MqttSpbEntity):
+        '''
+            Entity Scada Edge Node entity (EoN) class
+
+            This class is used to represent virtually an EoN entity from a SCADA application.
+            The scada application will automatically parse the received entity data into its
+            representation, allowing you to easily interact with the entity ( via commands ) or
+            to get the latest telemetry and attribute values.
+
+            This class allows you to:
+              - Subscribe to callback events when data from the entity is received ( BIRTH, DATA, DEATH )
+              - Get the latest data values ( entity.data or entity.attributes )
+              - Send a Command/s to the physical entity
+        '''
+
+        # functions - on_birth, on_death, on_data, send_command,
+        def __init__(self,
+                     spb_domain_name, spb_eon_name,
+                     scada_entity,
+                     callback_birth=None, callback_data=None, callback_death=None,
+                     debug_info=False):
+            super().__init__(spb_domain_name=spb_domain_name,
+                             spb_eon_name=spb_eon_name,
+                             debug_info=debug_info)
+
+            self.scada = scada_entity   # Save reference to the scada entity
+
+            self.callback_birth = callback_birth    # Save callback function references
+            self.callback_data = callback_data
+            self.callback_death = callback_death
+
+            self.entities_eond: Dict[str, MqttSpbEntityScada.EntityScadaEdgeDevice] = {}
+            '''
+                Dictionary of current virtual Edge Devices Entities.
+                
+                { EoND_Name : MqttSpbEntityScada.EntityScadaEdgeDevice(), ...}
+            '''
+
+            self._is_alive = False  # Device is alive ( BIRTH + DATA ) or not ( DEATH )
+
+            # Console Logger
+            self._logger = logging.getLogger("MQTTSPB_SCADA_EoND")
+            handler_log = logging.StreamHandler()
+            handler_log.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s | %(message)s'))
+            self._logger.addHandler(handler_log)
+            if debug_info:
+                self._logger.setLevel(logging.DEBUG)
+            else:
+                self._logger.setLevel(logging.ERROR)
+
+        def is_alive(self):
+            return self._is_alive
+
+        def connect(self,
+                    host='localhost',
+                    port=1883,
+                    user="",
+                    password="",
+                    use_tls=False,
+                    tls_ca_path="",
+                    tls_cert_path="",
+                    tls_key_path="",
+                    tls_insecure=False,
+                    timeout=5):
+            raise NotImplementedError("This method has been removed")
+
+        def disconnect(self, skip_death_publish=False):
+            raise NotImplementedError("This class method has been removed")
+
+        def is_connected(self):
+            raise NotImplementedError("This class method has been removed")
+
+        def publish_birth(self, QoS=0):
+            raise NotImplementedError("This class method has been removed")
+
+        def publish_data(self, send_all=False, QoS=0):
+            raise NotImplementedError("This class method has been removed")
+
+        def send_command(self, name, value, force=False):
+            return self.send_commands({name: value}, force)
+
+        def send_commands(self, commands, force=False):
+
+            # Command Check - If not part of entity commands, through an error.
+            if not force:
+                for k in commands:
+                    if k not in self.commands.get_name_list():
+                        self._logger.error("%s - Command %s not sent, unknown device command." % (self._entity_domain, k))
+                        return False
+
+            # Send commands via SCADA application
+            self.scada.send_commands(commands, self.spb_eon_name)
+
+    def __init__(self,
+                 spb_domain_name,  # sparkplug B Domain name
+                 spb_scada_name,  # Scada application name
+                 callback_birth=None, callback_data=None, callback_death=None,  # callbacks for different messages
+                 debug_info=False):
+        """
+
+        Initiate the SCADA application class
+
+        Args:
+            spb_domain_name:    Sparkplug B domain name
+            spb_scada_name:     Scada Application ID ( will be part of the MQTT topic )
+            debug_info:         Enable / Dissable debug information.
+        """
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
-        super().__init__(spb_group_name, spb_scada_name, None,
-                         debug_info=debug_info,
+        super().__init__(spb_domain_name, spb_scada_name, None,
+                         debug_info=False,
                          filter_cmd_msg=False,
                          entity_is_scada=True)
 
-    # Override class method
+        self._debug_info = debug_info  # If debug info should be displayed in the console.
+
+        #
+        self.entities_eon: Dict[str, MqttSpbEntityScada.EntityScadaEdgeNode] = {}
+        '''
+        List of current discovered edge nodes entities (EoN)
+        '''
+
+        self.callback_birth = callback_birth  # Save callback function references
+        self.callback_data = callback_data
+        self.callback_death = callback_death
+
+        self._spb_initialized = False       # Flag to mark the initialization of spb persistent messages(BIRTH, DEATH)
+        self._spb_initialized_timeout = 0   # Counter to keep initialization timeout event
+
+        # Console Logger
+        self._logger = logging.getLogger("MQTTSPB_SCADA_APP")
+        handler_log = logging.StreamHandler()
+        handler_log.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s | %(message)s'))
+        self._logger.addHandler(handler_log)
+        if debug_info:
+            self._logger.setLevel(logging.DEBUG)
+        else:
+            self._logger.setLevel(logging.ERROR)
+
+        self._logger.info("New SCADA Application object")
+
+    def connect(self,
+                host: str = 'localhost',
+                port: int = 1883,
+                user: str = "",
+                password: str = "",
+				use_tls: bool = False,
+                tls_ca_path: str = "",
+                tls_cert_path: str = "",
+                tls_key_path: str = "",
+                tls_insecure: str = False,
+                timeout: int = 5) -> bool:
+
+        # Set the initialization of spb messages ( BIRTH and DEATH )
+        self._spb_initialized = False
+        self._spb_initialized_timeout = time.time()
+
+        # Call the parent method
+        return super().connect(host, port, user, password, use_tls, tls_ca_path, tls_cert_path, tls_key_path, tls_insecure, timeout)
+
+    def disconnect(self, skip_death_publish=False):
+
+        # Clear the initialization of spb messages ( BIRTH and DEATH )
+        self._spb_initialized = False
+
+        # Call the parent method
+        return super().disconnect(skip_death_publish)
+
+
+    # Override class method 
     def _mqtt_on_connect(self, client, userdata, flags, rc):
 
         # Call the parent method
@@ -862,20 +1119,143 @@ class MqttSpbEntityScada(MqttSpbEntity):
 
         # Subscribe to all group topics
         if rc == 0:
-            topic = "spBv1.0/" + self.spb_group_name + "/#"
+            topic = "spBv1.0/" + self.spb_domain_name + "/#"
             self._mqtt.subscribe(topic)
-            logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
+            self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
-    def publish_command_edge_node(self, spb_eon_name, commands):
+    def _mqtt_on_message(self, client, userdata, msg):
+        """
+            Override the mqtt on message
+        """
 
+        # self._logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
+
+        # Tasks for initialization of spb messages
+        if not self._spb_initialized:
+
+            # If timeout expired, then mark the finalization of the initialization period
+            if time.time() > (self._spb_initialized_timeout + 0.5):
+
+                self._spb_initialized = True    # spb presistent messages are being initialized
+
+                # Reset entity state for all discovered entities
+                for eon in self.entities_eon.keys():
+                    self.entities_eon[eon]._is_alive = False
+
+                    for eond in self.entities_eon[eon].entities_eond.keys():
+                        self.entities_eon[eon].entities_eond[eond]._is_alive = False
+
+                self._logger.debug("spB initialization period expired, all entity states are cleared.")
+
+        # Process the message for edge nodes ( EoN and EoND )
+        topic = MqttSpbTopic(msg.topic)
+        eon_name = topic.eon_name
+        eond_name = topic.eon_device_name
+
+        # Ignore data from SCADA application
+        if eon_name == self.entity_name:
+            return  # Exit and ignore the data
+
+        # EDGE NODE - Let's check if the EdgeNode is already discovered, if not create it
+        if eon_name not in self.entities_eon.keys():
+            self._logger.debug("Unknown EoN entity, registering edge node: " + topic.eon_name)
+            self.entities_eon[eon_name] = self.EntityScadaEdgeNode(spb_domain_name=self.spb_domain_name,
+                                                                   spb_eon_name=topic.eon_name,
+                                                                   scada_entity=self,
+                                                                   debug_info=self._debug_info)
+
+        # DEVICE NODE - Lets check if device is discovered, otherwise create it.
+        if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
+            self.entities_eon[eon_name].entities_eond[eond_name] = self.EntityScadaEdgeDevice(spb_domain_name=self.spb_domain_name,
+                                                                                              spb_eon_name=eon_name,
+                                                                                              spb_eon_device_name=eond_name,
+                                                                                              scada_entity=self,
+                                                                                              debug_info=self._debug_info)
+            self._logger.debug("New device <%s> for edge node <%s>" % (eond_name, eon_name))
+
+        # PARSE PAYLOAD - De-serialize payload and update device data
+
+        # Get entity reference, EoN or EoND
+        if eond_name is None:
+            entity = self.entities_eon[eon_name]
+        else:
+            entity = self.entities_eon[eon_name].entities_eond[eond_name]
+
+        # Parse the payload, to be sent to the callbacks
+        payload = MqttSpbPayload(msg.payload)
+
+        # Parse the message from its type
+        if topic.message_type.endswith("BIRTH"):
+            if self._spb_initialized:
+                entity._is_alive = True  # Update status
+            entity.deserialize_payload_birth(msg.payload)  # Send the payload to the entity to deserialize it.
+            if entity.callback_birth is not None:
+                entity.callback_birth(payload.asDict())
+            if self.callback_birth is not None:
+                self.callback_birth(topic, payload.asDict())
+
+        elif topic.message_type.endswith("DATA"):
+            if self._spb_initialized:
+                entity._is_alive = True  # Update status
+            entity.deserialize_payload_data(msg.payload)  # Send the payload to the entity to deserialize it.
+            if entity.callback_data is not None:
+                entity.callback_data(payload.asDict())
+            if self.callback_data is not None:
+                self.callback_data(topic, payload.asDict())
+
+        elif topic.message_type.endswith("DEATH"):
+            if self._spb_initialized:
+                entity._is_alive = False    # Update status
+            # TODO decode the Death message and update the entity status
+            # entity.deserialize_payload_death(msg.payload)  # Send the payload to the entity to deserialize it.
+            if entity.callback_death is not None:
+                entity.callback_death(payload.asDict())
+            if self.callback_death is not None:
+                self.callback_death(topic, payload.asDict())
+
+        elif topic.message_type.endswith("CMD"):
+            pass    # do not parse entity commands
+
+        else:
+            self._logger.warning("%s - Unknown message type %s, could not parse MQTT message, message ignored" % (self._entity_domain, topic.message_type))
+
+        # Send message to Entity Scada
+        super()._mqtt_on_message(client, userdata, msg)
+
+    def send_command(self, cmd_name: str, cmd_value, eon_name: str, eond_name: str=None) -> bool:
+        '''
+        Send a command to an EoN or EoND entity.
+
+
+        Args:
+            cmd_name:       Command name
+            cmd_value:      Command value
+            eon_name:       EoN entity name
+            eond_name:      EoND entity name. If set to None the command will be sent to an EoN entity.
+
+        Returns:    Boolean representing the result
+        '''
+        return self.send_commands(eon_name, eond_name, {cmd_name: cmd_value})
+
+    def send_commands(self, commands: Dict[str, Any], eon_name: str, eond_name: str = None) -> bool:
+        """
+        Send a list of commands to the Edge node ( EoN_name ) or Edge Device Node ( EoND_Name )
+
+        Args:
+            commands:   Dictionary of commands
+            eon_name:   Name of Edge node
+            eond_name:  Name of Edge Device node. If empty, commands will be only sent to Edge entity (EoN)
+
+        Returns:    True if commands sent successfully
+
+        """
         if not self.is_connected():  # If not connected
-            logger.warning(
-                "%s - Could not send publish_command_edge_node(), not connected to MQTT server" % self._entity_domain)
+            self._logger.warning("%s - Could not send publish_command(), not connected to MQTT server" % self._entity_domain)
             return False
 
         if not isinstance(commands, dict):  # If no data commands as dictionary
-            logger.warning(
-                "%s - Could not send publish_command_edge_node(), commands not provided or not valid. Please provide a dictionary of command:value" % self._entity_domain)
+            self._logger.warning(
+                "%s - Command not sent. Please provide a dictionary with <command_name:value>" % self._entity_domain)
             return False
 
         # PAYLOAD
@@ -886,52 +1266,65 @@ class MqttSpbEntityScada(MqttSpbEntity):
             addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.spb_group_name + "/NCMD/" + spb_eon_name
+        if eond_name is not None:
+            topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + eon_name + "/" + eond_name
+        else:
+            topic = "spBv1.0/" + self.spb_domain_name + "/NCMD/" + eon_name
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
-            self._loopback_topic = topic
             self._mqtt.publish(topic, payload_bytes, 0, False)
-
-            logger.info("%s - Published COMMAND message to %s" % (self._entity_domain, topic))
-
+            self._logger.debug("%s - Published COMMAND message to %s" % (self._entity_domain, topic))
             return True
-
-        logger.warning("%s - Could not publish COMMAND message to %s" % (self._entity_domain, topic))
-        return False
-
-    def publish_command_device(self, spb_eon_name, spb_eon_device_name, commands):
-
-        if not self.is_connected():  # If not connected
-            logger.warning(
-                "%s - Could not send publish_command_device(), not connected to MQTT server" % self._entity_domain)
+        else:
+            self._logger.warning(
+              "%s - Could not publish COMMAND message to %s, no payload metrics?" % (self._entity_domain, topic))
             return False
 
-        if not isinstance(commands, dict):  # If no data commands as dictionary
-            logger.warning(
-                "%s - Could not send publish_command_device(), commands not provided or not valid. Please provide a dictionary of command:value" % self._entity_domain)
-            return False
+    def get_edge_node(self, eon_name: str) -> EntityScadaEdgeNode:
+        """
+            Subscribe and get a reference to the virtual EoN entity.
+        Args:
+            eon_name:   EoN Entity Name
 
-        # PAYLOAD
-        payload = getDdataPayload()
+        Returns:    EntityScadaEdgeNode reference for the EoN Entity.
+        """
+        return self.get_edge_node_device(eon_name, None)   # Get reference for the
 
-        # Add the list of commands to the payload metrics
-        for k in commands:
-            addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
+    def get_edge_node_device(self, eon_name: str, eond_name: str) -> EntityScadaEdgeDevice:
+        """
+        Get reference for the virtual Edge Node Device (EoND) entity.
 
-        # Send payload if there is new data
-        topic = "spBv1.0/" + self.spb_group_name + "/DCMD/" + spb_eon_name + "/" + spb_eon_device_name
+        Args:
+            eon_name:   EoN name
+            eond_name:  EoN Device name
+        """
 
-        if payload.metrics:
-            payload_bytes = bytearray(payload.SerializeToString())
-            self._loopback_topic = topic
-            self._mqtt.publish(topic, payload_bytes, 0, False)
+        # EDGE NODE - Let's check if the EdgeNode is already discovered, if not create it
+        if eon_name not in self.entities_eon.keys():
+            self._logger.debug("Unknown EoN entity, registering edge node: " + eon_name)
+            self.entities_eon[eon_name] = self.EntityScadaEdgeNode(spb_domain_name=self.spb_domain_name,
+                                                                   spb_eon_name=eon_name,
+                                                                   scada_entity=self,
+                                                                   debug_info=self._debug_info)
 
-            logger.info("%s - Published COMMAND message to %s" % (self._entity_domain, topic))
+        # DEVICE NODE - Lets check if device is discovered, otherwise create it.
+        if eond_name is not None:
+            if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
+                self.entities_eon[eon_name].entities_eond[eond_name] = self.EntityScadaEdgeDevice(spb_domain_name=self.spb_domain_name,
+                                                                                                  spb_eon_name=eon_name,
+                                                                                                  spb_eon_device_name=eond_name,
+                                                                                                  scada_entity=self,
+                                                                                                  debug_info=self._debug_info)
+                self._logger.debug("New device <%s> for edge node <%s>" % (eond_name, eon_name))
 
-            return True
+            return self.entities_eon[eon_name].entities_eond[eond_name]    # Return EoND
+        else:
+            return self.entities_eon[eon_name]   # Return EoN
 
-        logger.warning("%s - Could not publish COMMAND message to %s" % (self._entity_domain, topic))
-        return False
-
-
+    # def get_device_by_attribute(self, attribute_name, attribute_value, eon_name=None):
+    #     #TODO implement get_entity_by_attribute
+    #
+    #     # Search for entities that match attribute name and value
+    #     # If eon_name is None it will search in all eon
+    #     pass

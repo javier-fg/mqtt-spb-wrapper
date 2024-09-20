@@ -18,7 +18,7 @@ from mqtt_spb_wrapper import *
 _DEBUG = True   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_group_name = os.environ.get("SPB_GROUP", "GroupTest")
+_config_spb_domain_name = os.environ.get("SPB_GROUP", "GroupTest")
 _config_spb_scada_name = os.environ.get("SPB_SCADA", "SCADA-001")
 
 # MQTT Configuration
@@ -53,7 +53,7 @@ def callback_scada_message(topic : MqttSpbTopic, payload):
 
         # Create entity if never discovered before
         if entity_name not in entities.keys():
-            entities[entity_name] = MqttSpbEntity(spb_group_name=topic.group_name,
+            entities[entity_name] = MqttSpbEntity(spb_domain_name=topic.group_name,
                                                   spb_eon_name=topic.eon_name,
                                                   spb_eon_device_name=topic.eon_device_name,
                                                   debug_info=_DEBUG)
@@ -103,7 +103,7 @@ def callback_scada_message(topic : MqttSpbTopic, payload):
 
 
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_group_name= _config_spb_group_name,
+scada = MqttSpbEntityScada(spb_domain_name= _config_spb_domain_name,
                            spb_scada_name= _config_spb_scada_name,
                            debug_info=_DEBUG)
 

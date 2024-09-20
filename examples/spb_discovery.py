@@ -13,7 +13,7 @@ from mqtt_spb_wrapper import *
 _DEBUG = False   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_group_name = os.environ.get("SPB_GROUP", "*")
+_config_spb_domain_name = os.environ.get("SPB_GROUP", "*")
 
 # MQTT Configuration
 _config_mqtt_host = os.environ.get("MQTT_HOST", "localhost")
@@ -32,10 +32,10 @@ def on_connect(client, userdata, flags, rc):
         MQTT Callback function for connect events
     """
     if rc == 0:
-        if _config_spb_group_name == "*":
+        if _config_spb_domain_name == "*":
             topic = "spBv1.0/#"
         else:
-            topic = "spBv1.0/%s/#" % _config_spb_group_name
+            topic = "spBv1.0/%s/#" % _config_spb_domain_name
 
         # Subscribe to the specific topic
         client.subscribe(topic)
@@ -72,7 +72,7 @@ def on_message(client, userdata, msg):
 
     # Check if the entity is present in the group and eon
     if entity_name not in spb_groups[group_name][eon_name].keys():
-        entity = MqttSpbEntity( spb_group_name= group_name,
+        entity = MqttSpbEntity( spb_domain_name= group_name,
                                 spb_eon_name= eon_name,
                                 spb_eon_device_name=eon_device_name,
                                 debug_info=_DEBUG)

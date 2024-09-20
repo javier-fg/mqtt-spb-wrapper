@@ -19,7 +19,7 @@ except:
     exit()
 
 # Create the spB entity object
-device = MqttSpbEntityDevice(spb_group_name=config['sparkplugb']['group_name'],
+device = MqttSpbEntityDevice(spb_domain_name=config['sparkplugb']['group_name'],
                              spb_eon_name=config['sparkplugb']['edge_node_name'],
                              spb_eon_device_name=config['sparkplugb']['device_name'],
                              debug_info=_DEBUG)

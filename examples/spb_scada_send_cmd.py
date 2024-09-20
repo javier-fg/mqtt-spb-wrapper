@@ -18,7 +18,7 @@ _DEBUG = True   # Enable debug messages
 # Sparkplug B parameters
 _config_spb_scada_name = os.environ.get("SPB_SCADA", "SCADA-001")
 
-_config_spb_group_name = os.environ.get("SPB_GROUP", "GroupTest")
+_config_spb_domain_name = os.environ.get("SPB_GROUP", "GroupTest")
 _config_spb_eon_name = os.environ.get("SPB_EON", "GroupTest")
 _config_spb_device_name = os.environ.get("SPB_DEVICE", "GroupTest")
 
@@ -33,7 +33,7 @@ print("--- Sparkplug B example - SCADA send cmd example")
 # Global variables ----------------------------------------
 
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_group_name= _config_spb_group_name,
+scada = MqttSpbEntityScada(spb_domain_name= _config_spb_domain_name,
                            spb_scada_name= _config_spb_scada_name,
                            debug_info=_DEBUG)
 
