@@ -16,8 +16,8 @@ from mqtt_spb_wrapper import *
 _DEBUG = True   # Enable debug messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_GROUP", "GroupTest")
-_config_spb_app_name = os.environ.get("SPB_APP", "ListenApp01")
+_config_spb_domain_name = os.environ.get("SPB_DOMAIN", "TestDomain")
+_config_spb_app_name = os.environ.get("SPB_APP", "App-01")
 
 # MQTT Configuration
 _config_mqtt_topic = "#"    # Topic to listen
@@ -68,6 +68,7 @@ print("--- Sparkplug B example - Application Entity Listener")
 # Create the spB application entity
 app = MqttSpbEntityApplication(spb_domain_name=_config_spb_domain_name,
                                spb_app_entity_name=_config_spb_app_name,
+                               retain_birth=True,
                                debug_info=_DEBUG)
 # Set callbacks
 app.on_message = callback_app_message
