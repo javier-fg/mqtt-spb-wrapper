@@ -277,7 +277,7 @@ class MqttSpbEntity(SpbEntity):
 
         msg_ts_rx = int(datetime.datetime.utcnow().timestamp() * 1000)  # Save the current timestamp
 
-        self._logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
+        # self._logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
 
         # Parse the topic namespace ------------------------------------------------
         topic = SpbTopic(msg.topic)  # Parse and get the topic object

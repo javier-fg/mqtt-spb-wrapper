@@ -227,35 +227,35 @@ class MqttSpbEntityScada(MqttSpbEntity):
 
         # EDGE NODE - Let's check if the EdgeNode is already discovered, if not create it
         if eon_name not in self.entities_eon.keys():
-            self._logger.debug("Unknown EoN entity, registering edge node: " + topic.eon_name)
             self.entities_eon[eon_name] = self.EntityScadaEdgeNode(spb_domain_name=self.spb_domain_name,
                                                                    spb_eon_name=topic.eon_name,
                                                                    scada_entity=self,
-                                                                   debug_info=self._debug_info)
+                                                                   # debug_info=self._debug_info
+                                                                   )
+
+            self._logger.debug("NEW edge node discovered - <%s>" % (eon_name))
 
         # DEVICE NODE - Lets check if device is discovered, otherwise create it.
-        if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
-            new_device = self.EntityScadaEdgeDevice(spb_domain_name=self.spb_domain_name,
-                                                    spb_eon_name=eon_name,
-                                                    spb_eon_device_name=eond_name,
-                                                    scada_entity=self,
-                                                    debug_info=self._debug_info)
+        if eond_name is not None:
+            if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
+                new_device = self.EntityScadaEdgeDevice(spb_domain_name=self.spb_domain_name,
+                                                        spb_eon_name=eon_name,
+                                                        spb_eon_device_name=eond_name,
+                                                        scada_entity=self,
+                                                        # debug_info=self._debug_info,
+                                                        )
 
-            self.entities_eon[eon_name].entities_eond[eond_name] = new_device
-            if eond_name is not None:
-                self._logger.debug("New device <%s> for edge node <%s>" % (eond_name, eon_name))
-            else:
-                self._logger.debug("New edge node <%s>" % (eon_name))
+                self.entities_eon[eon_name].entities_eond[eond_name] = new_device
 
-        # PARSE PAYLOAD - De-serialize payload and update device data
+                self._logger.debug("NEW device discovered    - <%s>.<%s>" % (eon_name, eond_name))
 
-        # Get entity reference, EoN or EoND
+        # Select the entity to process the data and inject the data into the entity
         if eond_name is None:
             entity = self.entities_eon[eon_name]
         else:
             entity = self.entities_eon[eon_name].entities_eond[eond_name]
 
-        # Parse the payload, to be sent to the callbacks
+        # PARSE PAYLOAD - De-serialize payload and update device dataFix
         payload = SpbPayload(msg.payload)
 
         # Parse the message from its type
@@ -288,6 +288,9 @@ class MqttSpbEntityScada(MqttSpbEntity):
                 self.callback_death(topic, payload.as_dict())
 
         elif topic.message_type.endswith("CMD"):
+            pass  # do not parse entity commands
+
+        elif topic.message_type.endswith("STATE"):
             pass  # do not parse entity commands
 
         else:
