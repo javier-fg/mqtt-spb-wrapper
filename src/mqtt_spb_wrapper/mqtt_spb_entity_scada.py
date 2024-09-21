@@ -117,6 +117,39 @@ class MqttSpbEntityScada(MqttSpbEntity):
             # Send commands via SCADA application
             self._scada.send_commands(commands, self.spb_eon_name)
 
+
+        def search_device_by_attribute(self, attributes: dict) -> list:
+
+            res = []    # List of devices found
+
+            # Iterate over the devices
+            for eond, device in self.entities_eond.items():
+
+                is_found = True     # Flag to mark a detection
+
+                # Iterate over the attributes to be found
+                for k, v in attributes.items():
+
+                    # not found on previous iteration/attribute, then exit
+                    if not is_found:
+                        break
+
+                    # Search for attribute name
+                    if k not in device.attributes.get_name_list():
+                        is_found = False
+                        continue    # Not found
+
+                    # Compare the attribute value
+                    if not str(device.attributes.get_value(k)) == str(v):
+                        is_found = False
+                        continue
+
+                # If found a match, add the device
+                if is_found:
+                    res.append(eond)
+
+            return res
+
     def __init__(self,
                  spb_domain_name,  # sparkplug B Domain name
                  spb_scada_name,  # Scada application name
@@ -183,6 +216,16 @@ class MqttSpbEntityScada(MqttSpbEntity):
 
         # Call the parent method
         return super().disconnect(skip_death_publish)
+
+    def is_initialized(self):
+        """
+        Returns True if SCADA application is initialized.
+        This initialization time is used to retrieve all BIRTH messages from the broker during an specific timeout.
+
+            Returns: True when initialized
+
+        """
+        return self._spb_initialized
 
     def _mqtt_on_connect(self, client, userdata, flags, rc):
 
@@ -255,7 +298,8 @@ class MqttSpbEntityScada(MqttSpbEntity):
         else:
             entity = self.entities_eon[eon_name].entities_eond[eond_name]
 
-        # PARSE PAYLOAD - De-serialize payload and update device dataFix
+        # PARSE PAYLOAD - De-serialize payload and update device data
+
         payload = SpbPayload(msg.payload)
 
         # Parse the message from its type
