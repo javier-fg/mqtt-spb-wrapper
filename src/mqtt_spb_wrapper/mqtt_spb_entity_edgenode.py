@@ -8,19 +8,19 @@ class MqttSpbEntityEdgeNode(MqttSpbEntity):
 
     def __init__(self, spb_domain_name, spb_eon_name,
                  retain_birth=False,
-                 debug_info=False, debug_id="MQTT_SPB_EDGENODE",
+                 debug_enabled=False, debug_id="MQTT_SPB_EDGENODE",
                  include_spb_rebirth=True):
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
         super().__init__(spb_domain_name=spb_domain_name, spb_eon_name=spb_eon_name,
                          retain_birth=retain_birth,
-                         debug_info=debug_info, debug_id=debug_id)
+                         debug_enabled=debug_enabled, debug_id=debug_id)
 
         # Add spB Birth command as per Specifications
         if include_spb_rebirth:
             self.commands.set_value(name="Node Control/Rebirth",
                                     value=False,
-                                    callback=self.publish_birth())
+                                    callback_on_change=self.publish_birth())
 
     def publish_command_device(self, spb_eon_device_name, commands):
 

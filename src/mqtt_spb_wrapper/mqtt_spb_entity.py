@@ -14,7 +14,7 @@ class MqttSpbEntity(SpbEntity):
                  spb_eon_name,
                  spb_eon_device_name=None,
                  retain_birth=False,
-                 debug_info=False,
+                 debug_enabled=False,
                  debug_id="MQTT_SPB_ENTITY",
                  entity_is_scada=False
                  ):
@@ -22,7 +22,7 @@ class MqttSpbEntity(SpbEntity):
         super().__init__(spb_domain_name=spb_domain_name,
                          spb_eon_name=spb_eon_name,
                          spb_eon_device_name=spb_eon_device_name,
-                         debug_info=debug_info, debug_id=debug_id)
+                         debug_enabled=debug_enabled, debug_id=debug_id)
 
         # Public members -----------
         self.on_command = None  # Callback function when a command is received
@@ -124,8 +124,27 @@ class MqttSpbEntity(SpbEntity):
                 tls_cert_path="",
                 tls_key_path="",
                 tls_insecure=False,
-                timeout=5):
+                timeout=5,
+                skip_death=False,
+                ):
+        """
+            Connect to the spB MQTT server
+        Args:
+            host:
+            port:
+            user:
+            password:
+            use_tls:
+            tls_ca_path:
+            tls_cert_path:
+            tls_key_path:
+            tls_insecure:
+            timeout:
+            skip_death:         If true, DEATH meassage will not be sent
 
+        Returns:
+
+        """
         # If we are already connected, then exit
         if self.is_connected():
             return True
@@ -167,19 +186,20 @@ class MqttSpbEntity(SpbEntity):
                 self._mqtt.tls_set()  # Enable TLS encryption
 
         # Entity DEATH message - last will message
-        if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
-            topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
-            self._mqtt.will_set(topic, "OFFLINE".encode("utf-8"), 0, True)  # Set message
-        else:  # Normal node
-            payload = getNodeDeathPayload()
-            payload_bytes = bytearray(payload.SerializeToString())
-            if self._spb_eon_device_name is None:  # EoN
-                topic = "spBv1.0/" + self.spb_domain_name + "/NDEATH/" + self._spb_eon_name
-            else:
-                topic = "spBv1.0/" + self.spb_domain_name + "/DDEATH/" + self._spb_eon_name + "/" \
-                        + self._spb_eon_device_name
+        if not skip_death:
+            if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
+                topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
+                self._mqtt.will_set(topic, "OFFLINE".encode("utf-8"), 0, True)  # Set message
+            else:  # Normal node
+                payload = getNodeDeathPayload()
+                payload_bytes = bytearray(payload.SerializeToString())
+                if self._spb_eon_device_name is None:  # EoN
+                    topic = "spBv1.0/" + self.spb_domain_name + "/NDEATH/" + self._spb_eon_name
+                else:
+                    topic = "spBv1.0/" + self.spb_domain_name + "/DDEATH/" + self._spb_eon_name + "/" \
+                            + self._spb_eon_device_name
 
-            self._mqtt.will_set(topic, payload_bytes, 0, False)  # Set message
+                self._mqtt.will_set(topic, payload_bytes, 0, False)  # Set message
 
         # MQTT Connect
         self._logger.info("%s - Trying to connect MQTT server %s:%d" % (self._entity_domain, host, port))
@@ -284,7 +304,7 @@ class MqttSpbEntity(SpbEntity):
 
         # Check that the namespace and group are correct
         # NOTE: Should not be because we are subscribed to a specific topic, but good to check.
-        if topic.namespace != "spBv1.0" or topic.group_name != self._spb_domain_name:
+        if topic.namespace != "spBv1.0" or topic.domain_name != self._spb_domain_name:
             self._logger.error(
                 "%s - Incorrect MQTT spBv1.0 namespace and topic. Message ignored !" % self._entity_domain)
             return
@@ -320,7 +340,7 @@ class MqttSpbEntity(SpbEntity):
             for item in payload['metrics']:
 
                 # If not in the current list of known commands, removed it
-                if item['name'] not in self.commands.get_name_list():
+                if item['name'] not in self.commands.get_names():
                     self._logger.warning(
                         "%s - Unrecognized CMD: %s - CMD will be ignored" % (self._entity_domain, item['name']))
                     continue  # Process next command

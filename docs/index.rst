@@ -9,6 +9,7 @@ Contents:
 
    wrapper
    modules
+   examples
 
 Indices and tables
 ==================

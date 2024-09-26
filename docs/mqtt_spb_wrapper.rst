@@ -5,12 +5,21 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    mqtt_spb_wrapper.spb_protobuf
 
 Submodules
 ----------
+
+mqtt\_spb\_wrapper.spb\_base module
+-----------------------------------
+
+.. automodule:: mqtt_spb_wrapper.spb_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 mqtt\_spb\_wrapper.mqtt\_spb\_entity module
 -------------------------------------------
@@ -48,14 +57,6 @@ mqtt\_spb\_wrapper.mqtt\_spb\_entity\_scada module
 --------------------------------------------------
 
 .. automodule:: mqtt_spb_wrapper.mqtt_spb_entity_scada
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-mqtt\_spb\_wrapper.spb\_base module
------------------------------------
-
-.. automodule:: mqtt_spb_wrapper.spb_base
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,104 +1,140 @@
+# -----------------------------------------------------------------------------
+# Copyright (c) Javier FG 2024
 #
-#    --- Simple Sparkplub B listener pplication example ---
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0/
 #
-#   The application will create an spB application EoN node to receive all group messages and
-#   display them in the console.
-#
-#   Notes:
-#       - To set MQTT broker parameters, use config.yml file
-#       - To set spB group and eon ids, use config.yml file.
-#
+# SPDX-License-Identifier: EPL-2.0
+# -----------------------------------------------------------------------------
+
+"""
+Filename: spb_app_listener.py
+
+Description:
+
+   --- Simple Sparkplub B APPLICATION entity example ---
+
+  The application will create an spB Application entity to receive all group messages and
+  display them in the console. The application will also keep status of current group entities.
+
+"""
+
 import os
 import time
-from mqtt_spb_wrapper import *
+from mqtt_spb_wrapper import MqttSpbEntityApp
+
 
 # APPLICATION default configuration parameters -----------------------------------------------
-_DEBUG = True   # Enable debug messages
+_DEBUG = True           # Enable debug messages
+_GHOST_SPB_APP = True   # If true, the spB App entity will not publish its BIRTH and DEATH messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_DOMAIN", "TestDomain")
-_config_spb_app_name = os.environ.get("SPB_APP", "App-01")
+_config_spb_domain_name = os.environ.get("SPB_GROUP", "IECON")
+
+_config_spb_app_name = os.environ.get("SPB_APP", "App-001")
+
+# Testing EoN and EoND names for automatic detection
+_device_test_eon = os.environ.get("DEV_EON", "Edge-001")
+_device_test_eond = os.environ.get("DEV_EOND", "Device-01")
 
 # MQTT Configuration
-_config_mqtt_topic = "#"    # Topic to listen
-
 _config_mqtt_host = os.environ.get("MQTT_HOST", "localhost")
 _config_mqtt_port = int(os.environ.get("MQTT_PORT", 1883))
-
 _config_mqtt_user = os.environ.get("MQTT_USER", "")
 _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
-_config_mqtt_tls_enabled = os.environ.get("MQTT_TLS_ENABLED", '').lower() in ('true', '1', 't')
 
-_config_mqtt_tls_ca = os.environ.get("MQTT_TLS_CA", "")
-_config_mqtt_tls_cert = os.environ.get("MQTT_TLS_CERT", "")
-_config_mqtt_tls_key = os.environ.get("MQTT_TLS_KEY", "")
+print("--- Sparkplug B example - spB Application Entity example")
+
+# Global variables ----------------------------------------
+
+# Create the spB App entity to listen to all spB messages
+application = MqttSpbEntityApp(
+    spb_domain_name=_config_spb_domain_name,
+    spb_app_name=_config_spb_app_name,
+    debug_enabled=_DEBUG
+)
+
+# ATTRIBUTES - Application entity
+application.attributes.set_value("description", "APP entity example simple")
+
+# Setting APP callbacks on received messages.
+# application.callback_birth = lambda topic, payload: print("APP birth msg on - " + str(topic))
+# application.callback_data = lambda topic, payload: print("APP data msg on - " + str(topic))
+# application.callback_death = lambda topic, payload: print("APP death msg on - " + str(topic))
+# application.callback_new_eon = lambda _eon_name: print("APP new EoN entity: " + str(_eon_name))
+application.callback_new_eond = lambda _eon_name, _eond_name: print("APP new EoND entity: " + str(_eond_name) + "." + str(_eon_name))
+
+# Reference to specific EoN entity
+# edgetest = application.get_edge_node("EdgeNode-001")
+# edgetest.callback_birth = lambda payload: print("EoN birth msg - " + str(payload)) # Setting callbacks on received messages.
+# edgetest.callback_data = lambda payload: print("EoN data msg - " + str(payload))
+# edgetest.callback_death = lambda payload: print("EoN death msg - " + str(payload))
 
 
-def callback_app_message(topic, payload):
-    """
-        Callback for received messages events
-    """
-    print("APP received MESSAGE: %s - %s" % (topic, payload))
+# EoND device specific object
+print("Subscribing to virtual device %s - %s" %(_device_test_eon, _device_test_eond))
+
+devicetest = application.get_edge_device(_device_test_eon, _device_test_eond)
 
 
-def callback_app_command(payload):
-    """
-        Callback for received commands events
-    """
-    print("APP received CMD: %s" % payload)
+def devicetest_data_callback(payload):
 
-    # Parse commands
-    for cmd in payload['metrics']:
+    print("EoND data msg - " + str(payload))
 
-        # Parse fields
-        name = cmd["name"]
-        value = cmd["value"]
+    # Example - Send a command if a value is equal to a specific number.
+    if devicetest.data.get_value("value") == 2:
+        devicetest.send_command("test", True, True)
+        print("EoND command sent!")
 
-        # Parse commands
-        if name == "ping" and value:  # Ping command
 
-            # Send response
-            app.data.update_value("ping", True)
-            app.publish_data()
+# Registering callbacks
+devicetest.callback_birth = lambda payload: print("EoND birth msg - " + str(payload))
+devicetest.callback_death = lambda payload: print("EoND death msg - " + str(payload))
+devicetest.callback_data = devicetest_data_callback
+# devicetest.callback_data = lambda payload: print("EoND data msg - " + str(payload))
 
-            print("  CMD Ping received - Sending response")
 
-print("--- Sparkplug B example - Application Entity Listener")
-
-# Create the spB application entity
-app = MqttSpbEntityApplication(spb_domain_name=_config_spb_domain_name,
-                               spb_app_entity_name=_config_spb_app_name,
-                               retain_birth=True,
-                               debug_info=_DEBUG)
-# Set callbacks
-app.on_message = callback_app_message
-app.on_command = callback_app_command
-
-# ATTRIBUTES
-app.attributes.set_value("Info", "Test application")
-
-# COMMANDS
-app.commands.set_value("ping", False)
-app.data.set_value("ping", False)
-
-# Connect to the broker.
+# ------ Connect to the MQTT broker -------
 _connected = False
 while not _connected:
     print("Connecting to data broker %s:%d ..." % (_config_mqtt_host, _config_mqtt_port))
-    _connected = app.connect(_config_mqtt_host,
-                             _config_mqtt_port,
-                             _config_mqtt_user,
-                             _config_mqtt_pass,
-                             _config_mqtt_tls_enabled,
-                             _config_mqtt_tls_ca,
-                             _config_mqtt_tls_cert,
-                             _config_mqtt_tls_key)
+    _connected = application.connect(_config_mqtt_host,
+                                     _config_mqtt_port,
+                                     _config_mqtt_user,
+                                     _config_mqtt_pass,
+                                     skip_death=_GHOST_SPB_APP)
     if not _connected:
         print("  Error, could not connect. Trying again in a few seconds ...")
         time.sleep(3)
 
-app.publish_birth()  # Send birth message
+# Send birth message for the spB Application, if GHOST mode activated, no BIRTH message sent
+if not _GHOST_SPB_APP:
+    application.publish_birth()
 
-# Loop forever
+print("Waiting for APP initialization...")
+while not application.is_initialized():
+    time.sleep(0.1)
+
+# ------- Loop forever -------
+# The application will display the existing discovered entities in the spB domain.
 while True:
-    time.sleep(1000)
+
+    # Print entities status and send some test command
+    print("--- APP current entities:")
+
+    # Print the discovered EoN node
+    for eon_name in application.entities_eon.keys():
+        print("  %s (Active:%s)" % (eon_name, application.entities_eon[eon_name].is_alive()))
+        for eond_name in application.entities_eon[eon_name].entities_eond.keys():
+            device = application.entities_eon[eon_name].entities_eond[eond_name]
+            print("     %s (Active:%s) - %s | %s" % (
+                device.entity_name,
+                application.entities_eon[eon_name].entities_eond[eond_name].is_alive(),
+                device.data.get_dictionary(),
+                device.attributes.get_dictionary())
+            )
+
+    # Sleep some time
+    time.sleep(10)
+

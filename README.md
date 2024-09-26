@@ -131,7 +131,7 @@ def callback_app_command(payload):
 domain_name = "Domain-001"
 app_entity_name = "ListenApp01"
 
-app = MqttSpbEntityApplication(domain_name, app_entity_name, debug_info=_DEBUG)
+app = MqttSpbEntityApp(domain_name, app_entity_name, debug_enabled=_DEBUG)
 
 # Set callbacks
 app.on_message = callback_app_message
@@ -156,7 +156,6 @@ while not _connected:
 
 # Send birth message
 app.publish_birth()
-
 
 # Loop forever, messages and commands will be handeled by the callbacks
 while True:
