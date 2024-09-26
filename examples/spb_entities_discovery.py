@@ -57,7 +57,7 @@ def on_message(client, userdata, msg):
     # Parse the topic
     topic.parse_topic(msg.topic)
 
-    group_name = topic.group_name
+    group_name = topic.domain_name
     eon_name = topic.eon_name
     eon_device_name = topic.eon_device_name
     entity_name = topic.entity_name
@@ -75,7 +75,7 @@ def on_message(client, userdata, msg):
         entity = MqttSpbEntity( spb_domain_name= group_name,
                                 spb_eon_name= eon_name,
                                 spb_eon_device_name=eon_device_name,
-                                debug_info=_DEBUG)
+                                debug_enabled=_DEBUG)
         spb_groups[group_name][eon_name][entity_name] = entity     # Save the reference
     else:
         entity = spb_groups[group_name][eon_name][entity_name]  # Get the reference

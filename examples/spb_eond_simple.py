@@ -20,7 +20,7 @@ _DEBUG = True   # Enable debug messages
 # Sparkplug B parameters
 _config_spb_domain_name = os.environ.get("SPB_GROUP", "TestDomain")
 _config_spb_eon_name = os.environ.get("SPB_EON", "Edge-001")
-_config_spb_eon_device_name = os.environ.get("SPB_EON_DEVICE", "Device-01")
+_config_spb_eon_device_name = os.environ.get("SPB_EON_DEVICE", "Device-01s")
 
 # MQTT Configuration
 _config_mqtt_topic = "#"    # Topic to listen
@@ -75,7 +75,7 @@ print("--- Sparkplug B example - End of Node Device - Simple")
 device = MqttSpbEntityDevice(spb_domain_name=_config_spb_domain_name,
                              spb_eon_name=_config_spb_eon_name,
                              spb_eon_device_name=_config_spb_eon_device_name,
-                             debug_info=_DEBUG)
+                             debug_enabled=_DEBUG)
 
 # Configure callbacks
 device.on_message = callback_message    # Received messages
@@ -97,7 +97,7 @@ for k in device.attributes.get_dictionary():
     print("  %s - %s" % (k["name"], k['value']))
 
 print("--- COMMANDS")
-device.commands.set_value("test", False, callback=callback_cmd_test)
+device.commands.set_value("test", False, callback_on_change=callback_cmd_test)
 for k in commands:
     device.commands.set_value(k, commands[k])
 for k in device.commands.get_dictionary():

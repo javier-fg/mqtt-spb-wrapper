@@ -35,7 +35,7 @@ print("--- Sparkplug B example - SCADA send cmd example")
 # Create the SCADA entity to listen to all spB messages
 scada = MqttSpbEntityScada(spb_domain_name= _config_spb_domain_name,
                            spb_scada_name= _config_spb_scada_name,
-                           debug_info=_DEBUG)
+                           debug_enabled=_DEBUG)
 
 # ATTRIBUTES
 scada.attributes.set_value("description", "SCADA application simple")

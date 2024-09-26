@@ -23,7 +23,7 @@ device = MqttSpbEntityDevice(spb_domain_name=config['sparkplugb']['domain_name']
                              spb_eon_name=config['sparkplugb']['edge_node_name'],
                              spb_eon_device_name=config['sparkplugb']['device_name'],
                              retain_birth=True,
-                             debug_info=_DEBUG)
+                             debug_enabled=_DEBUG)
 
 # Load data from CSV file -----------------------------------------------------------------------
 print("Loading data")
@@ -123,7 +123,7 @@ device.publish_birth()  # Send birth message
 for i in range(100):
 
     # Update the field telemetry data
-    for k in device.data.get_name_list():
+    for k in device.data.get_names():
         value = telemetry[k]
         if isinstance(value, pd.Series):
             device.data.set_value(k, value[i])
