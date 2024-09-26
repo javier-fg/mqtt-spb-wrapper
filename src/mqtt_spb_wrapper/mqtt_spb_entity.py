@@ -107,7 +107,7 @@ class MqttSpbEntity(SpbEntity):
             self._loopback_topic = topic
             self._mqtt.publish(topic, payload_bytes, qos, False)
 
-            self._logger.info("%s - Published DATA message %s" % (self._entity_domain, topic))
+            self._logger.debug("%s - Published DATA message %s" % (self._entity_domain, topic))
             return True
 
         self._logger.warning("%s - Could not publish DATA message, may be data no new data values?"

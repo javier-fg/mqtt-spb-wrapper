@@ -494,8 +494,8 @@ class SpbEntity:
             # If exist update the value, otherwise add the element.
             for item in self._values:
                 if item.name == name:
-                    item.value = value
                     item.timestamp = timestamp  # If timestamp is none, the current time will be used.
+                    item.value = value
                     return True
 
             # item was not found, then add it to the list.
