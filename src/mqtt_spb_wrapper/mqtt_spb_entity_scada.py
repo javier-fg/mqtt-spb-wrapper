@@ -184,7 +184,11 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
 
         Returns:    Boolean representing the result
         """
-        return self.send_commands(eon_name, eond_name, {cmd_name: cmd_value})
+        return self.send_commands(
+            eon_name=eon_name,
+            eond_name=eond_name,
+            commands={cmd_name: cmd_value}
+        )
 
     def send_commands(self, commands: Dict[str, Any], eon_name: str, eond_name: str = None) -> bool:
         """

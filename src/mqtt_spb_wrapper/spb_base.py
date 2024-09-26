@@ -213,15 +213,18 @@ class SpbEntity:
 
                 if field['name'].startswith("ATTR/"):
                     field['name'] = field['name'][5:]
-                    self.attributes.set_value(field['name'], field['value'], field['timestamp'])  # update field
+                    if field.get("value"):
+                        self.attributes.set_value(field['name'], field['value'], field['timestamp'])  # update field
 
                 elif field['name'].startswith("CMD/"):
                     field['name'] = field['name'][4:]
-                    self.commands.set_value(field['name'], field['value'], field['timestamp'])  # update field
+                    if field.get("value"):
+                        self.commands.set_value(field['name'], field['value'], field['timestamp'])  # update field
 
                 elif field['name'].startswith("DATA/"):
                     field['name'] = field['name'][5:]
-                    self.data.set_value(field['name'], field['value'], field['timestamp'])  # update field
+                    if field.get("value"):
+                        self.data.set_value(field['name'], field['value'], field['timestamp'])  # update field
 
         return payload
 
