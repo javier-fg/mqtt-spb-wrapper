@@ -1,8 +1,12 @@
+**IMPORTANT:** Please review changelog.md for latest library changes.
+
+
+
 # Python Sparkplug B Wrapper
 
 This python module implements an easy way to create Sparkplug B entities on Python, abstracting one level up the already existing python Eclipse Tahu Sparkplug B v1.0 core modules.
 
-The *mqtt-spb-wrapper* python module provides the following high level objects to handle generic Sparkplug B entities in an easy way:
+The *mqtt-spb-wrapper* python module provides the following high level objects to handle generic Sparkplug B entities and MQTT communications in an easy way:
 
 - **MqttSpbEntityEdgeNode** - End of Network (EoN) entity 
   - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD as well as to the STATUS messages from the SCADA application.
@@ -15,18 +19,22 @@ The *mqtt-spb-wrapper* python module provides the following high level objects t
 
 Other helper classes:
 
-- **MqttSpbPayload**
+- **SpbPayload**
   - Class to decode the Sparkplug B binary payloads ( Google protobuf format )
-- **MqttSpbTopic** 
-  - Class to parse, decode and handle MQTT Sparkplug B topics.
+- **SpbTopic** 
+  - Class to parse, decode and handle MQTT-based Sparkplug B topics.
+- **SpbEntity**
+  - Class to encapsulate all basic Sparkplug B entity ( no MQTT functionality )
+    
 
-## Examples
+
+## Library Examples
 
 The repository includes a folder with some basic examples for the different type of entities, **see the folder /examples** in this repository for more examples.
 
 ### Basic EoN Device
 
-The following code shows how to create an EoND entity that transmit some simple data.
+The following code shows how to create a basic Sparkplug B Device Node (  called EoND ) entity that transmit some simple data.
 
 ```python
 import time
@@ -40,19 +48,16 @@ print("--- Sparkplug B example - End of Node Device - Simple")
 def callback_command(payload):
     print("DEVICE received CMD: %s" % (payload))
 
-
-def callback_message(topic, payload):
-    print("Received MESSAGE: %s - %s" % (topic, payload))
-
-
+def callback_cmd_test(value):
+    print("   CMD test received - value: " + str(value))
+    
 # Create the spB entity object
-group_name = "Group-001"
+domain_name = "Group-001"
 edge_node_name = "Gateway-001"
 device_name = "SimpleEoND-01"
 
-device = MqttSpbEntityDevice(group_name, edge_node_name, device_name, _DEBUG)
+device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
 
-device.on_message = callback_message  # Received messages
 device.on_command = callback_command  # Callback for received commands
 
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
@@ -67,12 +72,13 @@ device.data.set_value("value", 0)
 
 # Commands
 device.commands.set_value("rebirth", False)
+device.commands.set_value("test", False, callback_on_change=callback_cmd_test) # If a test command is received, the callback will be executed.
 
 # Connect to the broker --------------------------------------------
 _connected = False
 while not _connected:
     print("Trying to connect to broker...")
-    _connected = device.connect("localhost8", 1883)
+    _connected = device.connect("localhost", 1883)
     if not _connected:
         print("  Error, could not connect. Trying again in a few seconds ...")
         time.sleep(3)
@@ -107,63 +113,6 @@ print("Application finished !")
 
 
 
-### Basic Listener Application
-
-The following code shows how to create an application entity to listen to all Sparkplug B messages on a given group.
-
-```python
-import time
-from mqtt_spb_wrapper import *
-
-_DEBUG = True  # Enable debug messages
-
-print("--- Sparkplug B example - Application Entity Listener")
-
-
-def callback_app_message(topic, payload):
-    print("APP received MESSAGE: %s - %s" % (topic, payload))
-
-
-def callback_app_command(payload):
-    print("APP received CMD: %s" % payload)
-
-
-domain_name = "Domain-001"
-app_entity_name = "ListenApp01"
-
-app = MqttSpbEntityApp(domain_name, app_entity_name, debug_enabled=_DEBUG)
-
-# Set callbacks
-app.on_message = callback_app_message
-app.on_command = callback_app_command
-
-# Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
-
-# Attributes
-app.attributes.set_value("description", "Test application")
-
-# Commands
-app.commands.set_value("rebirth", False)
-
-# Connect to the broker----------------------------------------------------------------
-_connected = False
-while not _connected:
-    print("Trying to connect to broker...")
-    _connected = app.connect("localhost8", 1883)
-    if not _connected:
-        print("  Error, could not connect. Trying again in a few seconds ...")
-        time.sleep(3)
-
-# Send birth message
-app.publish_birth()
-
-# Loop forever, messages and commands will be handeled by the callbacks
-while True:
-    time.sleep(1000)
-```
-
-
-
 ## Eclipse Sparkplug B v1.0
 
 Sparkplug is a specification for MQTT enabled devices and applications to send and receive messages in a stateful way. While MQTT is stateful by nature it doesn't ensure that all data on a receiving MQTT application is current or valid. Sparkplug provides a mechanism for ensuring that remote device or application data is current and valid. The main Sparkplug B features include:
@@ -186,4 +135,6 @@ Eclipse Tahu provide client libraries and reference implementations in various l
 The *mqtt-spb-wrapper* python module uses the open source Sparkplug core function from Eclipse Tahu repository, located at: https://github.com/eclipse/tahu (The current release used is v0.5.15 ).
 
 For more information visit : https://github.com/eclipse/tahu
+
+
 
