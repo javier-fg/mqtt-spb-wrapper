@@ -1,6 +1,4 @@
-import datetime
 import time
-
 import paho.mqtt.client as mqtt
 
 from .spb_base import SpbEntity, SpbTopic, SpbPayload
@@ -126,6 +124,7 @@ class MqttSpbEntity(SpbEntity):
                 tls_insecure=False,
                 timeout=5,
                 skip_death=False,
+                client_id="",
                 ):
         """
             Connect to the spB MQTT server
@@ -151,7 +150,7 @@ class MqttSpbEntity(SpbEntity):
 
         # MQTT Client configuration
         if self._mqtt is None:
-            self._mqtt = mqtt.Client(userdata=self)
+            self._mqtt = mqtt.Client(userdata=self, client_id=client_id)
 
         self._mqtt.on_connect = self._mqtt_on_connect
         self._mqtt.on_disconnect = self._mqtt_on_disconnect
@@ -295,7 +294,7 @@ class MqttSpbEntity(SpbEntity):
         if self._loopback_topic == msg.topic:
             return
 
-        msg_ts_rx = int(datetime.datetime.utcnow().timestamp() * 1000)  # Save the current timestamp
+        msg_ts_rx = int(time.time() * 1000)  # Save the current timestamp
 
         # self._logger.info("%s - Message received  %s" % (self._entity_domain, msg.topic))
 
