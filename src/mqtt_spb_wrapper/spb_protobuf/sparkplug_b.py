@@ -12,6 +12,7 @@
 # ********************************************************************************/
 import time
 from .sparkplug_b_pb2 import Payload
+import pandas as pd
 
 seqNum = 0
 bdSeq = 0
@@ -72,22 +73,6 @@ class ParameterDataType:
     DateTime = 13
     Text = 14
 
-class ParameterDataType:
-    Unknown = 0
-    Int8 = 1
-    Int16 = 2
-    Int32 = 3
-    Int64 = 4
-    UInt8 = 5
-    UInt16 = 6
-    UInt32 = 7
-    UInt64 = 8
-    Float = 9
-    Double = 10
-    Boolean = 11
-    String = 12
-    DateTime = 13
-    Text = 14
 
 ######################################################################
 # Always request this before requesting the Node Birth Payload
@@ -97,6 +82,7 @@ def getNodeDeathPayload():
     addMetric(payload, "bdSeq", None, MetricDataType.Int64, getBdSeqNum())
     return payload
 ######################################################################
+
 
 ######################################################################
 # Always request this after requesting the Node Death Payload
@@ -121,12 +107,14 @@ def getDeviceBirthPayload():
     return payload
 ######################################################################
 
+
 ######################################################################
 # Get a DDATA payload
 ######################################################################
 def getDdataPayload():
     return getDeviceBirthPayload()
 ######################################################################
+
 
 ######################################################################
 # Helper method for adding dataset metrics to a payload
@@ -146,6 +134,7 @@ def initDatasetMetric(payload, name, alias, columns, types):
     metric.dataset_value.types.extend(types)
     return metric.dataset_value
 ######################################################################
+
 
 ######################################################################
 # Helper method for adding dataset metrics to a payload
@@ -168,6 +157,7 @@ def initTemplateMetric(payload, name, alias, templateRef):
 
     return metric.template_value
 ######################################################################
+
 
 ######################################################################
 # Helper method for adding metrics to a container which can be a
@@ -254,7 +244,7 @@ def addMetric(container, name, alias, type, value, timestamp=int(round(time.time
         metric.datatype = MetricDataType.Template
         metric.template_value = value
     else:
-        print( "Invalid: " + str(type))
+        print("Invalid: " + str(type))
 
     # Return the metric
     return metric
@@ -330,6 +320,7 @@ def addNullMetric(container, name, alias, type):
     return metric
 ######################################################################
 
+
 ######################################################################
 # Helper method for getting the next sequence number
 ######################################################################
@@ -343,6 +334,7 @@ def getSeqNum():
     return retVal
 ######################################################################
 
+
 ######################################################################
 # Helper method for getting the next birth/death sequence number
 ######################################################################
@@ -355,4 +347,80 @@ def getBdSeqNum():
         bdSeq = 0
     return retVal
 ######################################################################
+
+
+def addMetricDataset_from_dict(payload, name, alias, data):
+    """
+    Converts a dictionary into a Sparkplug B dataset metric.
+
+    Args:
+        payload (Payload): The payload to add the dataset metric to.
+        name (str): The name of the dataset metric.
+        alias (int): The alias for the metric.
+        data (dict): The dictionary containing columns as keys and lists of values.
+
+    Returns:
+        The initialized dataset metric.
+
+    Example:
+
+        # Sample dictionary data
+        data = {
+            "Temperature": [23.5, 22.0, 21.8],
+            "Humidity": [60.2, 58.9, 59.5],
+            "Status": ["Normal", "Warning", "Alert"]
+        }
+
+        # Create a new Sparkplug B payload
+        payload = Payload()
+
+        # Convert the dictionary into a dataset metric
+        dict_to_dataset_metric(payload, "environmental_data", 1, data)
+
+    """
+    
+    # Extract columns and data types
+    columns = list(data.keys())
+
+    # Check for consistent column dimensions
+    lengths = [len(v) for v in data.values()]
+    if len(set(lengths)) > 1:
+        raise ValueError(f"All columns must have the same number of rows, but got lengths: {lengths}")
+
+    # Determine types based on the first row's types.
+    first_row = [v[0] for v in data.values()]
+    types = []
+    for value in first_row:
+        if isinstance(value, int):
+            types.append(DataSetDataType.Int32)
+        elif isinstance(value, float):
+            types.append(DataSetDataType.Float)
+        elif isinstance(value, str):
+            types.append(DataSetDataType.String)
+        else:
+            raise ValueError(f"Unsupported data type: {type(value)}")
+
+    # Initialize the dataset metric using the provided function
+    dataset = initDatasetMetric(payload, name, alias, columns, types)
+
+    # Get the number of rows from the data values
+    num_rows = lengths[0]
+
+    # Add rows to the dataset
+    for i in range(num_rows):
+        dataset_row = dataset.rows.add()
+        for col in columns:
+            element = dataset_row.elements.add()
+            value = data[col][i]
+            # Add the value based on its type
+            if isinstance(value, int):
+                element.int_value = value
+            elif isinstance(value, float):
+                element.float_value = value
+            elif isinstance(value, str):
+                element.string_value = value
+            else:
+                raise ValueError(f"Unsupported value type: {type(value)}")
+
+    return dataset
 
