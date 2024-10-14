@@ -31,7 +31,6 @@ _GHOST_SPB_APP = True   # If true, the spB App entity will not publish its BIRTH
 
 # Sparkplug B parameters
 _config_spb_domain_name = os.environ.get("SPB_GROUP", "IECON")
-
 _config_spb_app_name = os.environ.get("SPB_APP", "App-001")
 
 # Testing EoN and EoND names for automatic detection
@@ -48,7 +47,7 @@ print("--- Sparkplug B example - spB Application Entity example")
 
 # Global variables ----------------------------------------
 
-# Create the spB App entity to listen to all spB messages
+#  ---------- Create the spB App entity to listen to all spB messages
 application = MqttSpbEntityApp(
     spb_domain_name=_config_spb_domain_name,
     spb_app_name=_config_spb_app_name,
@@ -65,14 +64,14 @@ application.attributes.set_value("description", "APP entity example simple")
 # application.callback_new_eon = lambda _eon_name: print("APP new EoN entity: " + str(_eon_name))
 application.callback_new_eond = lambda _eon_name, _eond_name: print("APP new EoND entity: " + str(_eond_name) + "." + str(_eon_name))
 
-# Reference to specific EoN entity
+#  ---------- Subscribe to a EoN entity, specific callbacks will be executed when data is being received by the application.
 # edgetest = application.get_edge_node("EdgeNode-001")
 # edgetest.callback_birth = lambda payload: print("EoN birth msg - " + str(payload)) # Setting callbacks on received messages.
 # edgetest.callback_data = lambda payload: print("EoN data msg - " + str(payload))
 # edgetest.callback_death = lambda payload: print("EoN death msg - " + str(payload))
 
 
-# EoND device specific object
+# ---------- Subscribe to an EoND device
 print("Subscribing to virtual device %s - %s" %(_device_test_eon, _device_test_eond))
 
 devicetest = application.get_edge_device(_device_test_eon, _device_test_eond)
@@ -86,7 +85,6 @@ def devicetest_data_callback(payload):
     if devicetest.data.get_value("value") == 2:
         devicetest.send_command("test", True, True)
         print("EoND command sent!")
-
 
 # Registering callbacks
 devicetest.callback_birth = lambda payload: print("EoND birth msg - " + str(payload))
@@ -123,7 +121,7 @@ while True:
     # Print entities status and send some test command
     print("--- APP current entities:")
 
-    # Print the discovered EoN node
+    # Print the discovered EoN nodes and devices
     for eon_name in application.entities_eon.keys():
         print("  %s (Active:%s)" % (eon_name, application.entities_eon[eon_name].is_alive()))
         for eond_name in application.entities_eon[eon_name].entities_eond.keys():
@@ -131,8 +129,8 @@ while True:
             print("     %s (Active:%s) - %s | %s" % (
                 device.entity_name,
                 application.entities_eon[eon_name].entities_eond[eond_name].is_alive(),
-                device.data.get_dictionary(),
-                device.attributes.get_dictionary())
+                device.data.as_dict(),
+                device.attributes.as_dict())
             )
 
     # Sleep some time

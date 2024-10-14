@@ -93,20 +93,20 @@ telemetry = {"value": 0,    # Simple value counter
 print("--- ATTRIBUTES")
 for k in attributes:
     device.attributes.set_value(k, attributes[k])
-for k in device.attributes.get_dictionary():
+for k in device.attributes.as_dict():
     print("  %s - %s" % (k["name"], k['value']))
 
 print("--- COMMANDS")
 device.commands.set_value("test", False, callback_on_change=callback_cmd_test)
 for k in commands:
     device.commands.set_value(k, commands[k])
-for k in device.commands.get_dictionary():
+for k in device.commands.as_dict():
     print("  %s - %s" % (k["name"], k['value']))
 
 print("--- TELEMETRY")
 for k in telemetry:
     device.data.set_value(k, telemetry[k])
-for k in device.data.get_dictionary():
+for k in device.data.as_dict():
     print("  %s - %s" % (k["name"], k['value']))
 
 # Connect to the broker

@@ -127,8 +127,8 @@ while True:
             print("     %s (Active:%s) - %s | %s" % (
                 device.entity_name,
                 scada.entities_eon[eon_name].entities_eond[eond_name].is_alive(),
-                device.data.get_dictionary(),
-                device.attributes.get_dictionary())
+                device.data.as_dict(),
+                device.attributes.as_dict())
             )
 
     # Sleep some time
