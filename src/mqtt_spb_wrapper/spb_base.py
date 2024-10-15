@@ -813,14 +813,21 @@ class SpbTopic:
 
         self.namespace = "spBv1.0"
 
-        out = "%s/%s/%s/%s" % (
-            self.namespace,
-            self.domain_name,
-            self.message_type,
-            self.eon_name,
-        )
+        if self.message_type == "STATE":
+            out = "%s/%s/%s" % (
+                self.namespace,
+                self.message_type,
+                self.eon_name,
+            )
+        else:
+            out = "%s/%s/%s/%s" % (
+                self.namespace,
+                self.domain_name,
+                self.message_type,
+                self.eon_name,
+            )
 
-        if not self.eon_device_name:
+        if self.eon_device_name:
             out += "/" + self.eon_device_name
 
         return out
