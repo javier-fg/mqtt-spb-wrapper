@@ -37,6 +37,7 @@ The repository includes a folder with some basic examples for the different type
 The following code shows how to create a basic Sparkplug B Device Node (  called EoND ) entity that transmit some simple data.
 
 ```python
+
 import time
 from mqtt_spb_wrapper import *
 
@@ -48,9 +49,11 @@ print("--- Sparkplug B example - End of Node Device - Simple")
 def callback_command(payload):
     print("DEVICE received CMD: %s" % (payload))
 
+
 def callback_cmd_test(value):
     print("   CMD test received - value: " + str(value))
-    
+
+
 # Create the spB entity object
 domain_name = "Group-001"
 edge_node_name = "Gateway-001"
@@ -58,21 +61,34 @@ device_name = "SimpleEoND-01"
 
 device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
 
-device.on_command = callback_command  # Callback for received commands
+device.on_command = callback_command  # Callback for received device commands
 
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
 
-# Attributes
+# --- Attributes
 device.attributes.set_value("description", "Simple EoN Device node")
 device.attributes.set_value("type", "Simulated-EoND-device")
 device.attributes.set_value("version", "0.01")
 
-# Data / Telemetry
-device.data.set_value("value", 0)
+# --- Data / Telemetry
+# Set a metric value. If no timestamp is provided, the system UTC epoch in ms will be automatically used.
+device.data.set_value(
+    name="value",
+    value=0
+)
 
-# Commands
+# You can set a list of values for the metric. You must provide the same list size for the timestamps.
+# You can check if a value has multiple values by checking its "is_single_value()" method, like device.data.is_single_value("values")
+device.data.set_value(
+    name="values",
+    value=[12, 34, 45],
+    timestamp=[1728973247000, 1728973248000, 1728973249000]
+)
+
+# --- Commands
 device.commands.set_value("rebirth", False)
-device.commands.set_value("test", False, callback_on_change=callback_cmd_test) # If a test command is received, the callback will be executed.
+device.commands.set_value("test", False,
+                          callback_on_change=callback_cmd_test)  # If a test command is received, the callback will be executed.
 
 # Connect to the broker --------------------------------------------
 _connected = False
@@ -86,10 +102,12 @@ while not _connected:
 # Send birth message
 device.publish_birth()
 
-
 # Send some telemetry values ---------------------------------------
+
 value = 0  # Simple counter
+
 for i in range(5):
+
     # Update the data value
     device.data.set_value("value", value)
 
@@ -104,11 +122,13 @@ for i in range(5):
     time.sleep(5)
 
 # Disconnect device -------------------------------------------------
+
 # After disconnection the MQTT broker will send the entity DEATH message.
 print("Disconnecting device")
 device.disconnect()
 
 print("Application finished !")
+
 ```
 
 
