@@ -778,28 +778,46 @@ class SpbTopic:
         if "spBv1.0/STATE" in topic_str:
             self.domain_name = None
             self.message_type = "STATE"
+
+            self.eon_name = None
+            self.eon_device_name = None
+            self.entity_name = None
+
+            # If EoN
+            if len(topic_fields) > 2:
+                self.eon_name = topic_fields[2]
+                self.entity_name = self.eon_name
+
+            # If EoN device type
+            if len(topic_fields) > 3:
+                self.eon_device_name = topic_fields[3]
+                self.entity_name = self.eon_device_name
+
+            self.domain = "%s.%s.%s" % (self.namespace, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
+
         else:
             self.domain_name = topic_fields[1]
             self.message_type = topic_fields[2]
 
-        self.eon_name = None
-        self.eon_device_name = None
+            self.eon_name = None
+            self.eon_device_name = None
+            self.entity_name = None
 
-        self.entity_name = None
+            # If EoN
+            if len(topic_fields) > 3:
+                self.eon_name = topic_fields[3]
+                self.entity_name = self.eon_name
 
-        # If EoN
-        if len(topic_fields) > 3:
-            self.eon_name = topic_fields[3]
-            self.entity_name = self.eon_name
+            # If EoN device type
+            if len(topic_fields) > 4:
+                self.eon_device_name = topic_fields[4]
+                self.entity_name = self.eon_device_name
 
-        # If EoN device type
-        if len(topic_fields) > 4:
-            self.eon_device_name = topic_fields[4]
-            self.entity_name = self.eon_device_name
-
-        self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
-        if self.eon_device_name is not None:
-            self.domain += ".%s" % self.eon_device_name
+            self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
 
         return str(self)
 
