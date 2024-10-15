@@ -374,6 +374,7 @@ class SpbEntity:
         spb_domain_name (str): spB Domain name
         spb_eon_name (str): spB Edge of Network (EoN) node name
         spb_eon_device_name (str, optional): spB Edge of Network Devide (EoND) node name. If set to None, the entity is of an EoN type.
+        spb_host_app_name (str, optional): spB Primary Host(AKA SCADA) Application name. If set to None, will listen to any STATE messages.
         debug_enabled ( bool, optional): Enable console debug messages
         debug_id ( str, optional ): Console debug identification for the class messages.
     """
@@ -383,6 +384,7 @@ class SpbEntity:
             spb_domain_name: str,
             spb_eon_name: str,
             spb_eon_device_name: str = None,
+            spb_host_app_name: str = None,
             debug_enabled: bool = False,
             debug_id: str = "SPB_ENTITY",
     ):
@@ -398,6 +400,7 @@ class SpbEntity:
         self._spb_domain_name = spb_domain_name
         self._spb_eon_name = spb_eon_name
         self._spb_eon_device_name = spb_eon_device_name
+        self._spb_host_app_name = spb_host_app_name
 
         if spb_eon_device_name is None:
             self._entity_domain = "spBv1.%s.%s" % (self._spb_domain_name, self._spb_eon_name)
@@ -772,8 +775,13 @@ class SpbTopic:
         self.topic = topic_str
 
         self.namespace = topic_fields[0]
-        self.domain_name = topic_fields[1]
-        self.message_type = topic_fields[2]
+        if "spBv1.0/STATE" in topic_str:
+            self.domain_name = None
+            self.message_type = "STATE"
+        else:
+            self.domain_name = topic_fields[1]
+            self.message_type = topic_fields[2]
+
         self.eon_name = None
         self.eon_device_name = None
 
