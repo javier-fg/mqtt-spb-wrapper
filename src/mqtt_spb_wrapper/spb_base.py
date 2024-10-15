@@ -225,6 +225,11 @@ class MetricGroup:
             return self._items[field_name].value
         return None
 
+    def get_value_timestamp(self, field_name):
+        if field_name in self._items.keys():
+            return self._items[field_name].timestamp
+        return None
+
     def is_empty(self) -> bool:
         """
         True if there is not metrics for the current group
