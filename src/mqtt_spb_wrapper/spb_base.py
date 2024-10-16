@@ -793,7 +793,7 @@ class SpbTopic:
                 self.eon_device_name = topic_fields[3]
                 self.entity_name = self.eon_device_name
 
-            self.domain = "%s.%s.%s" % (self.namespace, self.eon_name)
+            self.domain = "%s.%s" % (self.namespace, self.eon_name)
             if self.eon_device_name is not None:
                 self.domain += ".%s" % self.eon_device_name
 
