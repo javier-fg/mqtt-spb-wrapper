@@ -1,6 +1,9 @@
 import logging
 import time
+from io import TextIOWrapper, BufferedReader
 from typing import Callable, Any
+from datetime import datetime
+import uuid
 
 from .spb_protobuf import Payload
 
@@ -31,12 +34,13 @@ class MetricValue:
             name: str,
             value,
             timestamp=None,
-            callback_on_change: Callable[[Any], None] = None
+            callback_on_change: Callable[[Any], None] = None,
+            spb_data_type: MetricDataType = None,
+            spb_alias_num: int = None,
     ):
-
         self.name = name
         self.is_updated = True
-        self._callback = callback_on_change
+        self.spb_alias_num = spb_alias_num
 
         if isinstance(value, list) and isinstance(timestamp, list) and len(value) == len(timestamp):
             self._value = value
@@ -55,11 +59,30 @@ class MetricValue:
                 else:
                     self._timestamp = [timestamp]
 
-    def __str__(self):
-        return str(self.as_dict())
+        self._callback = callback_on_change
 
-    def __repr__(self):
-        return str(self.as_dict())
+        if spb_data_type is not None:
+            self._spb_data_type = spb_data_type
+        else:
+            # Get data type
+            if isinstance(value, str):
+                self._spb_data_type = MetricDataType.Text
+            elif isinstance(value, bool):
+                self._spb_data_type = MetricDataType.Boolean
+            elif isinstance(value, int):
+                self._spb_data_type = MetricDataType.Int64
+            elif isinstance(value, float):
+                self._spb_data_type = MetricDataType.Double
+            elif isinstance(value, bytes) or isinstance(value, bytearray):
+                self._spb_data_type = MetricDataType.Bytes
+            elif isinstance(value, datetime):
+                self._spb_data_type = MetricDataType.DateTime
+            elif isinstance(value, uuid.UUID):
+                self._spb_data_type = MetricDataType.UUID
+            elif isinstance(value, TextIOWrapper) or isinstance(value, BufferedReader):
+                self._spb_data_type = MetricDataType.File
+            else:
+                self._spb_data_type = MetricDataType.Unknown
 
     def is_single_value(self):
         """ Returns True if there is only one value and timestamp """
@@ -172,6 +195,36 @@ class MetricValue:
         """
         return self._callback is not None
 
+    @property
+    def spb_data_type(self):
+        """
+         Get the metric data type of the SPB entity
+
+        Returns: MetricDataType
+        """
+        return self._spb_data_type
+
+    @spb_data_type.setter
+    def spb_data_type(self, data_type : MetricDataType):
+        """
+        Set the metric data type of the SPB entity.
+
+        Note that you can enforce specific data types
+
+        Args:
+            data_type: MetricDataType
+
+        Returns: Nothing
+
+        """
+        self._spb_data_type = data_type
+
+
+    def __str__(self):
+        return str(self.as_dict())
+
+    def __repr__(self):
+        return str(self.as_dict())
 
 class MetricGroup:
     """
@@ -182,10 +235,11 @@ class MetricGroup:
     This is used to group the metrics into DATA, ATTRIBUTES or COMMANDS.
     """
 
-    def __init__(self):
+    def __init__(self, birth_prefix=""):
 
         self._items = {}
         self.seq_number = None
+        self.birth_prefix = birth_prefix
 
     def __str__(self):
         return str(self.get_dictionary())
@@ -280,7 +334,13 @@ class MetricGroup:
         """
         return len(self._items)
 
-    def set_value(self, name: str, value, timestamp=None, callback_on_change=None):
+    def set_value(self,
+                  name: str, value,
+                  timestamp=None,
+                  callback_on_change=None,
+                  spb_alias_num=None,
+                  spb_data_type=None,
+                  ):
         """
         Initialize/set a metric value
 
@@ -289,10 +349,12 @@ class MetricGroup:
             value: Metric value
             timestamp: Epoc timestamp in milliseconds. If set to None timestamp set to current UTC timestamp.
             callback_on_change: function reference for on change events.
+            spb_data_type: MetricDataType - If None, the type will be automatically assigned.
 
-        Returns:
+        Returns: boolean - operation successful
 
         """
+
         # If value is set to None, ignore the update
         if value is None:
             return False
@@ -308,7 +370,9 @@ class MetricGroup:
             name=name,
             value=value,
             timestamp=timestamp,
-            callback_on_change=callback_on_change
+            callback_on_change=callback_on_change,
+            spb_data_type=spb_data_type,
+            spb_alias_num=spb_alias_num,
         )
 
         self._items[name] = new_item
@@ -395,9 +459,10 @@ class SpbEntity:
         # Public members -----------
         self.is_birth_published = False
 
-        self.attributes = MetricGroup()
-        self.data = MetricGroup()
-        self.commands = MetricGroup()
+        # Group of Metrics
+        self.attributes = MetricGroup(birth_prefix="ATTR")
+        self.data = MetricGroup(birth_prefix="DATA")
+        self.commands = MetricGroup(birth_prefix="CMD")
 
         # Private members -----------
         self._spb_domain_name = spb_domain_name
@@ -516,19 +581,66 @@ class SpbEntity:
     def entity_domain(self):
         return self._entity_domain
 
-    def _spb_data_type(self, data):
-        if isinstance(data, str):
-            return MetricDataType.Text
-        elif isinstance(data, bool):
-            return MetricDataType.Boolean
-        elif isinstance(data, int):
-            return MetricDataType.Double
-        elif isinstance(data, float):
-            return MetricDataType.Double
-        elif isinstance(data, bytes) or isinstance(data, bytearray):
-            return MetricDataType.Bytes
+    def _add_payload_metric(self, payload, name, metric_value: MetricValue):
+        """
+            Add spB Metric to payload based on an MetricValue.
+        Args:
+            payload: payload
+            name: metric name
+            metric_value: MetricValue
 
-        return MetricDataType.Unknown
+        Returns: Nothing
+
+        """
+
+        # If multiple values as list send it as spB DataSet
+        if not metric_value.is_single_value():
+            addMetricDataset_from_dict(
+                payload,
+                name=name,
+                alias=metric_value.spb_alias_num,
+                data={"timestamps": metric_value.timestamp, "values": metric_value.value}
+            )
+        # Add metric
+        else:
+
+            # Convert certain metric types to correct value types
+            # DateTime
+            if metric_value.spb_data_type == MetricDataType.DateTime:
+                if isinstance(metric_value.value, datetime):
+                    metric_value.value = int(metric_value.value.timestamp()*1000)
+                else:
+                    metric_value.value = int(metric_value.value)
+            # UUID
+            elif metric_value.spb_data_type == MetricDataType.UUID:
+                if isinstance(metric_value.value, uuid.UUID):
+                    metric_value.value = str(metric_value.value)
+                else:
+                    metric_value.value = str(metric_value.value)
+            #BYTES
+            elif metric_value.spb_data_type == MetricDataType.Bytes:
+                metric_value.value = bytes(metric_value.value)
+
+            #FILE
+            elif metric_value.spb_data_type == MetricDataType.File:
+                if isinstance(metric_value.value, TextIOWrapper):
+                    metric_value.value.seek(0)
+                    metric_value.value = bytes(metric_value.value.read().encode('utf-8'))
+                elif isinstance(metric_value.value, BufferedReader):
+                    metric_value.value.seek(0)
+                    metric_value.value = bytes(metric_value.value.read())
+                else:
+                    metric_value.value = bytes(metric_value.value)
+
+            # Add metric
+            addMetric(
+                payload,
+                name=name,
+                alias=metric_value.spb_alias_num,
+                type=metric_value.spb_data_type,
+                value=metric_value.value,
+                timestamp=metric_value.timestamp
+            )
 
     def serialize_payload_birth(self):
         """
@@ -543,35 +655,32 @@ class SpbEntity:
         # Attributes
         if not self.attributes.is_empty():
             for item in self.attributes.values():
-                name = "ATTR/" + item.name
-                # If multiple values send it as DataSet
-                if not item.is_single_value():
-                    addMetricDataset_from_dict(payload, name=name, alias=None,
-                                               data={"timestamps": item.timestamp, "values": item.value})
-                else:
-                    addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
+                # Add metric to payload
+                self._add_payload_metric(
+                    payload=payload,
+                    name=self.attributes.birth_prefix + "/" + item.name,
+                    metric_value=item
+                )
 
         # Data
         if not self.data.is_empty():
             for item in self.data.values():
-                name = "DATA/" + item.name
-                # If multiple values send it as DataSet
-                if not item.is_single_value():
-                    addMetricDataset_from_dict(payload, name=name, alias=None,
-                                               data={"timestamps": item.timestamp, "values": item.value})
-                else:
-                    addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
+                # Add metric to payload
+                self._add_payload_metric(
+                    payload=payload,
+                    name=self.data.birth_prefix + "/" + item.name,
+                    metric_value=item
+                )
 
         # Commands
         if not self.commands.is_empty():
             for item in self.commands.values():
-                name = "CMD/" + item.name
-                # If multiple values send it as DataSet
-                if not item.is_single_value():
-                    addMetricDataset_from_dict(payload, name=name, alias=None,
-                                               data={"timestamps": item.timestamp, "values": item.value})
-                else:
-                    addMetric(payload, name, None, self._spb_data_type(item.value), item.value, item.timestamp)
+                # Add metric to payload
+                self._add_payload_metric(
+                    payload=payload,
+                    name=self.commands.birth_prefix + "/" + item.name,
+                    metric_value=item
+                )
 
         payload_bytes = bytearray(payload.SerializeToString())
 
@@ -672,11 +781,12 @@ class SpbEntity:
         for item in self.data.values():
             # Only send those values that have been updated, or if send_all==True then send all.
             if send_all or item.is_updated:
-                # If multiple values send it as DataSet
-                if not item.is_single_value():
-                    addMetricDataset_from_dict(payload, name=item.name, alias=None, data={"timestamps": item.timestamp,"values": item.value} )
-                else:
-                    addMetric(payload, item.name, None, self._spb_data_type(item.value), item.value, item.timestamp)
+                # Add metric to payload
+                self._add_payload_metric(
+                    payload=payload,
+                    name=item.name,
+                    metric_value=item
+                )
 
         payload_bytes = bytearray(payload.SerializeToString())
 
