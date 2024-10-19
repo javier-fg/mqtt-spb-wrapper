@@ -4,7 +4,7 @@ from typing import Dict, Any
 from .spb_protobuf import getDdataPayload
 from .spb_protobuf import addMetric
 
-from .spb_base import SpbTopic, SpbPayload
+from .spb_base import SpbTopic, SpbPayloadParser
 from .mqtt_spb_entity import SpbEntity
 from .mqtt_spb_entity import MqttSpbEntity
 from .mqtt_spb_entity_app import MqttSpbEntityApp

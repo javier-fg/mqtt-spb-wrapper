@@ -688,7 +688,7 @@ class SpbEntity:
 
     def deserialize_payload_birth(self, data_bytes):
 
-        payload = SpbPayload(data_bytes).payload
+        payload = SpbPayloadParser(data_bytes).payload
 
         if payload is not None:
 
@@ -794,7 +794,7 @@ class SpbEntity:
 
     def deserialize_payload_data(self, data_bytes):
 
-        payload = SpbPayload(data_bytes).payload
+        payload = SpbPayloadParser(data_bytes).payload
 
         if payload is not None:
 
@@ -877,12 +877,23 @@ class SpbTopic:
     def __str__(self):
         return str(self.topic)
 
+    def to_string(self):
+        return str(self.topic)
+
     def __repr__(self):
         return str(self.topic)
 
     def parse_topic(self, topic_str):
 
         topic_fields = topic_str.split('/')  # Get the topic
+
+        # Validate the number of fields
+        if len(topic_fields) < 3:  # Ensure at least "namespace", "group_name", and "message_type" are present
+            raise ValueError(f"Invalid topic string: {topic_str}")
+
+        # Check name space
+        if topic_fields[0] != "spBv1.0":
+            raise ValueError(f"Invalid topic string: {topic_str}")
 
         self.topic = topic_str
 
@@ -932,7 +943,7 @@ class SpbTopic:
 
         return out
 
-class SpbPayload:
+class SpbPayloadParser:
     """
         Class to parse binary payloads into dictionary
     """

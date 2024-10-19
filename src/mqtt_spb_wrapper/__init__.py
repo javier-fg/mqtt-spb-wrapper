@@ -1,5 +1,5 @@
 
-from .spb_base import SpbTopic, SpbPayload, SpbEntity, MetricDataType
+from .spb_base import SpbTopic, SpbPayloadParser, SpbEntity, MetricDataType
 from .mqtt_spb_entity import MqttSpbEntity
 from .mqtt_spb_entity_device import MqttSpbEntityDevice
 from .mqtt_spb_entity_edgenode import MqttSpbEntityEdgeNode
@@ -9,7 +9,7 @@ from .mqtt_spb_entity_scada import MqttSpbEntityScada
 __all__ = [
     "MetricDataType",
     "SpbTopic",
-    "SpbPayload",
+    "SpbPayloadParser",
     "SpbEntity",
     "MqttSpbEntity",
     "MqttSpbEntityDevice",

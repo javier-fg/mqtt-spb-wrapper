@@ -1,7 +1,7 @@
 import os
 import paho.mqtt.client as mqtt
 import datetime
-from mqtt_spb_wrapper import SpbPayload
+from mqtt_spb_wrapper import SpbPayloadParser
 
 # APPLICATION configuration parameters -----------------------------------------------
 
@@ -16,7 +16,7 @@ _config_mqtt_pass = os.environ.get("MQTT_PASS", "")
 
 _config_mqtt_topic = os.environ.get("MQTT_TOPIC", _TOPIC)
 
-_payload_parser = SpbPayload()      # Payload parser
+_payload_parser = SpbPayloadParser()      # Payload parser
 
 
 def on_connect(client, userdata, flags, rc):

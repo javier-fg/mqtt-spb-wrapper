@@ -1,7 +1,7 @@
 import time
 from typing import Dict
 
-from .spb_base import SpbTopic, SpbPayload
+from .spb_base import SpbTopic, SpbPayloadParser
 from .mqtt_spb_entity import SpbEntity
 from .mqtt_spb_entity import MqttSpbEntity
 
@@ -269,7 +269,7 @@ class MqttSpbEntityApp(MqttSpbEntity):
 
         # PARSE PAYLOAD - De-serialize payload and update device data
 
-        payload = SpbPayload(msg.payload)
+        payload = SpbPayloadParser(msg.payload)
 
         # Parse the message from its type
         if topic.message_type.endswith("BIRTH"):

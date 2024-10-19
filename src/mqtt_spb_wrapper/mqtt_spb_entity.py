@@ -1,7 +1,7 @@
 import time
 import paho.mqtt.client as mqtt
 
-from .spb_base import SpbEntity, SpbTopic, SpbPayload
+from .spb_base import SpbEntity, SpbTopic, SpbPayloadParser
 from .spb_protobuf import getNodeDeathPayload
 
 
@@ -316,7 +316,7 @@ class MqttSpbEntity(SpbEntity):
             return
 
         # Parse the received ProtoBUF data ------------------------------------------------
-        payload = SpbPayload().parse_payload(msg.payload)
+        payload = SpbPayloadParser().parse_payload(msg.payload)
 
         # Add the timestamp when the message was received
         payload['timestamp_rx'] = msg_ts_rx
