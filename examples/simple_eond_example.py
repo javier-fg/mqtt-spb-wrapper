@@ -13,7 +13,7 @@ _MQTT_USER = ""
 _MQTT_PASSW = ""
 
 # Sparkplug B parameters - Create the spB entity object
-domain_name = "Group-001"
+domain_name = "TestDomain"
 edge_node_name = "Gateway-001"
 device_name = "SimpleEoND-01"
 

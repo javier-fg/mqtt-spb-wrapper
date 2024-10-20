@@ -30,7 +30,7 @@ _DEBUG = True           # Enable debug messages
 _GHOST_SPB_APP = True   # If true, the spB App entity will not publish its BIRTH and DEATH messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_GROUP", "IECON")
+_config_spb_domain_name = os.environ.get("SPB_GROUP", "TestDomain")
 _config_spb_app_name = os.environ.get("SPB_APP", "App-001")
 
 # Testing EoN and EoND names for automatic detection
