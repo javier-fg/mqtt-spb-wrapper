@@ -41,19 +41,20 @@ class MqttSpbEntity(SpbEntity):
                                  % self._entity_domain)
             return False
 
-        if self.is_empty():  # If no data (Data, attributes, commands )
-            self._logger.warning(
-                "%s - Could not send publish_birth(), entity doesn't have data ( attributes, data, commands )"
-                % self._entity_domain)
-            return False
-
         # If it is a type entity SCADA, change the BIRTH certificate
         if self._entity_is_scada:
             topic = "spBv1.0/" + self.spb_domain_name + "/STATE/" + self._spb_eon_name
             self._loopback_topic = topic
             self._mqtt.publish(topic, "ONLINE".encode("utf-8"), qos, True)
             self._logger.info("%s - Published STATE BIRTH message " % self._entity_domain)
+            self.is_birth_published = True
             return
+
+        if self.is_empty():  # If no data (Data, attributes, commands )
+            self._logger.warning(
+                "%s - Could not send publish_birth(), entity doesn't have data ( attributes, data, commands )"
+                % self._entity_domain)
+            return False
 
         # Publish BIRTH message
         payload_bytes = self.serialize_payload_birth()
@@ -266,12 +267,12 @@ class MqttSpbEntity(SpbEntity):
             else:
                 topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + self._spb_eon_name + "/" \
                         + self._spb_eon_device_name
-            self._mqtt.subscribe(topic)
+            client.subscribe(topic)
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
             # Subscribe to STATE of SCADA application
             topic = "spBv1.0/" + self.spb_domain_name + "/STATE/+"
-            self._mqtt.subscribe(topic)
+            client.subscribe(topic)
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
         else:
