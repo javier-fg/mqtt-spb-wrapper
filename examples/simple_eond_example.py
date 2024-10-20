@@ -51,7 +51,7 @@ device.data.set_value(
 # You can set a list of values+timestamps to be sent as spB Dataset Metric type.
 # IMPORTANT: You must provide the same list size for the values and timestamps, otherwise a single
 #            point will be sent ( first element )
-# You can check if a value has multiple values by checking its device.data.is_single_value("values")
+# You can check if a value has multiple values by checking its device.data.is_list_values("values")
 device.data.set_value(
     name="values",
     value=[12, 34, 45],
@@ -89,7 +89,7 @@ device.data.set_value(
     # spb_data_type = MetricDataType.File
 )
 
-# FILE - Can be sent from the open() object or you can send it as bytes or as a file
+# UUID - Universal Unique ID
 device.data.set_value(
     name="uuid",
     value=uuid.uuid4()
