@@ -98,6 +98,17 @@ device.data.set_value(
     # spb_data_type = MetricDataType.UUID
 )
 
+# DATASET - Table of values ( columns + rows ) provided as dictionary in python.
+# IMPORTANT: dictionary elements should be provided like colum_name: list(values), and
+#            all column values should be the same size
+device.data.set_value(
+    name="dataset",
+    value={
+        "Temperature": [23.5, 22.0, 21.8],
+        "Humidity": [60.2, 58.9, 59.5],
+        "Status": ["Normal", "Warning", "Alert"]
+    }
+)
 
 # --- Commands  --------------------------------------------------------------------------------------------------------
 device.commands.set_value(name="rebirth",

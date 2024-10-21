@@ -6,10 +6,8 @@ from datetime import datetime
 import uuid
 import base64
 
-from .spb_protobuf import Payload
-
 from google.protobuf.json_format import MessageToDict
-from .spb_protobuf import getDdataPayload, getNodeBirthPayload, getDeviceBirthPayload
+from .spb_protobuf import getDdataPayload, getNodeBirthPayload, getDeviceBirthPayload, Payload
 from .spb_protobuf import addMetric, MetricDataType
 from .spb_protobuf.sparkplug_b import addMetricDataset_from_dict
 
@@ -49,7 +47,7 @@ class MetricValue:
             self._value = value
             self._timestamp = timestamp
 
-            # Now we force value to be of a single type, for data type detection
+            # Now we force value to be of a single type, for data type detection in following function steps.
             value = value[0]
 
         # Data is single point
@@ -82,6 +80,8 @@ class MetricValue:
                 self._spb_data_type = MetricDataType.Double
             elif isinstance(value, bytes) or isinstance(value, bytearray):
                 self._spb_data_type = MetricDataType.Bytes
+            elif isinstance(value, dict):
+                self._spb_data_type = MetricDataType.DataSet
             elif isinstance(value, datetime):
                 self._spb_data_type = MetricDataType.DateTime
             elif isinstance(value, uuid.UUID):
@@ -611,46 +611,74 @@ class SpbEntity:
                 alias=metric_value.spb_alias_num,
                 data={"timestamps": metric_value.timestamp, "values": metric_value.value}
             )
-        # Add metric
-        else:
+            return
 
-            # Convert certain metric types to correct value types
-            # DateTime
-            if metric_value.spb_data_type == MetricDataType.DateTime:
-                if isinstance(metric_value.value, datetime):
-                    metric_value.value = int(metric_value.value.timestamp()*1000)
+        # DATASET - DICT of values
+        # data = {
+        #     "Temperature": [23.5, 22.0, 21.8],
+        #     "Humidity": [60.2, 58.9, 59.5],
+        #     "Status": ["Normal", "Warning", "Alert"]
+        # }
+        if metric_value.spb_data_type == MetricDataType.DataSet:
+
+            # Check if all values are lists
+            if not all(isinstance(v, list) for v in metric_value.value.values()):
+                raise ValueError("Not all metric values in the dictionary are lists. DatasetMetric:" + name)
+            else:
+                # Get the length of the first list
+                first_list_length = len(next(iter(metric_value.value.values())))
+
+                # Check if all lists have the same length
+                all_lists_same_length = all(len(v) == first_list_length for v in metric_value.value.values())
+
+                if not all_lists_same_length:
+                    raise ValueError("Not all lists are of the same size. DatasetMetric:" + name)
                 else:
-                    metric_value.value = int(metric_value.value)
-            # UUID
-            elif metric_value.spb_data_type == MetricDataType.UUID:
-                if isinstance(metric_value.value, uuid.UUID):
-                    metric_value.value = str(metric_value.value)
-                else:
-                    metric_value.value = str(metric_value.value)
-            #BYTES
-            elif metric_value.spb_data_type == MetricDataType.Bytes:
+                    addMetricDataset_from_dict(
+                        payload,
+                        name=name,
+                        alias=metric_value.spb_alias_num,
+                        data=metric_value.value
+                    )
+                    return
+
+        # Convert certain metric types to correct value types--------------------------------
+        # DateTime
+        if metric_value.spb_data_type == MetricDataType.DateTime:
+            if isinstance(metric_value.value, datetime):
+                metric_value.value = int(metric_value.value.timestamp()*1000)
+            else:
+                metric_value.value = int(metric_value.value)
+        # UUID
+        elif metric_value.spb_data_type == MetricDataType.UUID:
+            if isinstance(metric_value.value, uuid.UUID):
+                metric_value.value = str(metric_value.value)
+            else:
+                metric_value.value = str(metric_value.value)
+        #BYTES
+        elif metric_value.spb_data_type == MetricDataType.Bytes:
+            metric_value.value = bytes(metric_value.value)
+
+        #FILE
+        elif metric_value.spb_data_type == MetricDataType.File:
+            if isinstance(metric_value.value, TextIOWrapper):
+                metric_value.value.seek(0)
+                metric_value.value = bytes(metric_value.value.read().encode('utf-8'))
+            elif isinstance(metric_value.value, BufferedReader):
+                metric_value.value.seek(0)
+                metric_value.value = bytes(metric_value.value.read())
+            else:
                 metric_value.value = bytes(metric_value.value)
 
-            #FILE
-            elif metric_value.spb_data_type == MetricDataType.File:
-                if isinstance(metric_value.value, TextIOWrapper):
-                    metric_value.value.seek(0)
-                    metric_value.value = bytes(metric_value.value.read().encode('utf-8'))
-                elif isinstance(metric_value.value, BufferedReader):
-                    metric_value.value.seek(0)
-                    metric_value.value = bytes(metric_value.value.read())
-                else:
-                    metric_value.value = bytes(metric_value.value)
-
-            # Add metric
-            addMetric(
-                payload,
-                name=name,
-                alias=metric_value.spb_alias_num,
-                type=metric_value.spb_data_type,
-                value=metric_value.value,
-                timestamp=metric_value.timestamp
-            )
+        # Add metric
+        addMetric(
+            payload,
+            name=name,
+            alias=metric_value.spb_alias_num,
+            type=metric_value.spb_data_type,
+            value=metric_value.value,
+            timestamp=metric_value.timestamp
+        )
 
     def _deserialize_payload_metric(self, value_group: MetricGroup, metric_value: dict):
         """
@@ -668,16 +696,18 @@ class SpbEntity:
         if metric_value.get("value", None) is None:
             return
 
-        # VALUE LIST - Check if multiple values are being send as DataSet or Metric
+        # DATASET - DICT / VALUE LIST - Check if multiple values are being send as DataSet or Metric
         if metric_value.get("datatype") == MetricDataType.DataSet:
 
             # Get they dataSet values
             columns_data = {column: [] for column in metric_value['datasetValue']['columns']}
-            values_data_type = metric_value['datasetValue']['types'][metric_value['datasetValue']['columns'].index('values')]
+
             for row in metric_value['datasetValue']['rows']:
                 for idx, element in enumerate(row['elements']):
                     column_name = metric_value['datasetValue']['columns'][idx]
                     value = next(iter(element.values())) # get first element value
+                    values_data_type = metric_value['datasetValue']['types'][
+                        metric_value['datasetValue']['columns'].index(column_name)]
 
                     # If value is numeric type, convert it
                     if values_data_type == MetricDataType.Double or values_data_type == MetricDataType.Float:
@@ -690,10 +720,12 @@ class SpbEntity:
                     # Append the Value to the respective column list
                     columns_data[column_name].append(value)
 
-            # They should contain the "timestamps" and "values" items, otherwise ignore
+            # LIST VALUES - They should contain the "timestamps" and "values" items, otherwise it is a dictionary
             if "timestamps" in columns_data.keys() and "values" in columns_data.keys():
                 if len(columns_data['timestamps']) == len(columns_data['values']):
-
+                    # Get the values data type
+                    values_data_type = metric_value['datasetValue']['types'][
+                        metric_value['datasetValue']['columns'].index('values')]
                     # Add the values
                     value_group.set_value(
                         name=metric_value['name'],
@@ -701,6 +733,16 @@ class SpbEntity:
                         timestamp=[int(k) for k in columns_data['timestamps']],  # Force as integer
                         spb_data_type=values_data_type,
                     )
+
+            # DICT DataSet - The values are a dictionary/dataset
+            else:
+                # Add value to the group
+                value_group.set_value(
+                    name=metric_value['name'],
+                    value=columns_data,
+                    timestamp=metric_value['timestamp'],
+                    spb_data_type=metric_value['datatype'],
+                )  # update field
 
         # DEFAULT - Add it and keep the original data type
         else:
