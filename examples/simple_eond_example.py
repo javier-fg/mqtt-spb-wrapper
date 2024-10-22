@@ -20,8 +20,8 @@ device_name = "SimpleEoND-01"
 print("--- Sparkplug B example - End of Node Device - Simple")
 
 
-def callback_command(payload):
-    print("DEVICE received CMD: %s" % str(payload))
+def callback_command(cmd):
+    print("DEVICE received CMD: %s" % str(cmd))
 
 
 def callback_cmd_test(data_value):
@@ -33,13 +33,14 @@ device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
 
 device.on_command = callback_command  # Callback for received device commands
 
-
-# Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------------
-
 # --- Data / Telemetry  -----------------------------------------------------------------------------------------------
-# Set a metric value. If no timestamp is provided, the system UTC epoch in ms will be automatically used.
+# During BIRTH message, the prefix "DATA/" is added to all the metric names
+# You can change the attributes birth prefix using the attribute: device.data.birth_prefix = "DATA"
+
+
+# GENERIC METRIC VALUE. If no timestamp is provided, the system UTC epoch in ms will be automatically used.
 # INFO: Python default data types Numeric, Float String, Boolean are automatically detected and converted to their
-# respective Sparkplub B data types.
+# respective Sparkplub B data types will be used.
 device.data.set_value(
     name="value",
     value=0
@@ -54,10 +55,9 @@ device.data.set_value(
     spb_data_type=MetricDataType.UInt16,
 )
 
-# For a specific value name, a list of values + timestamps to send multiple values .
+# For a specific value name, a list of values + timestamps can be set to send multiple values at once.
 # IMPORTANT: You must provide the same list size for the values and timestamps, otherwise a single
 #            point will be sent ( first element )
-# Internally the spB DataSet metric is used to encapsulate these list of values.
 device.data.set_value(
     name="values",
     value=[12, 34, 45],
@@ -71,7 +71,7 @@ device.data.set_value(
     # value=bytearray([1, 2, 3, 4])   # It is possible to set a bytearray
 )
 
-# DATETIME - object type - value is converted to EPOC timestamp in milliseconds
+# DATETIME - to send specific spB DateTime metric typeS
 device.data.set_value(
     name="datetime",
     value=datetime.now()
@@ -96,7 +96,7 @@ device.data.set_value(
 )
 
 # DATASET - Table of values ( columns + rows ) provided as dictionary in python.
-# IMPORTANT: dictionary elements should be provided like colum_name: list(values), and
+# IMPORTANT: dictionary elements should be provided like {colum_name: list(values)}, and
 #            all column values should be the same size
 device.data.set_value(
     name="dataset",
@@ -108,22 +108,27 @@ device.data.set_value(
 )
 
 # --- Attributes   ----------------------------------------------------------------------------------------------------
+# Only sent during BIRTH message, with the prefix "ATTR/" over all the metric names
+# You can change the attributes birth prefix using the attribute: device.attributes.birth_prefix = "ATTR"
 device.attributes.set_value("description", "Simple EoN Device node")
 device.attributes.set_value("type", "Simulated-EoND-device")
 device.attributes.set_value("version", "0.01")
 
 # --- Commands  --------------------------------------------------------------------------------------------------------
+# During BIRTH message, the prefix "CMD/" is added to all the metric names
+# You can change the attributes birth prefix using the attribute: device.commands.birth_prefix = "CMD"
 device.commands.set_value(name="rebirth",
                           value=False
                           )
 
-# You can set a callback function. Data value will be passed as argument.
+# You can set a callback function per value. In this case if this specific command is received, the callback will be
+# executed and command data value will be passed as argument.
 device.commands.set_value(name="test",
                           value=False,
                           callback_on_change=callback_cmd_test
                           )
 
-# Connect to the broker ------------------------------------------------------------------------------------------------
+# Connect to the spB MQTT broker ---------------------------------------------------------------------------------------
 _connected = False
 while not _connected:
     print("Trying to connect to broker %s:%d ..." % (_MQTT_HOST, _MQTT_PORT))
@@ -139,11 +144,12 @@ while not _connected:
         print("  Error, could not connect. Trying again in a few seconds ...")
         time.sleep(3)
 
-# Send birth message
+# Send device birth message
 device.publish_birth()
 
 # Send some telemetry values ---------------------------------------
-# NOTE: From another app, you can try to send commands to this entity
+# NOTE: From another app (SCADA example application), you can try to send commands to this entity for testing the
+#       command callback functions.
 
 value = 0  # Simple counter
 
@@ -164,7 +170,7 @@ for i in range(5):
 
 # Disconnect device -------------------------------------------------
 
-# After disconnection the MQTT broker will send the entity DEATH message.
+# After disconnection, the MQTT broker will send the device entity DEATH message.
 print("Disconnecting device")
 device.disconnect()
 
