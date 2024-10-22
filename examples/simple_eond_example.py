@@ -36,26 +36,13 @@ device.on_command = callback_command  # Callback for received device commands
 
 # Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------------
 
-# --- Attributes   ----------------------------------------------------------------------------------------------------
-device.attributes.set_value("description", "Simple EoN Device node")
-device.attributes.set_value("type", "Simulated-EoND-device")
-device.attributes.set_value("version", "0.01")
-
 # --- Data / Telemetry  -----------------------------------------------------------------------------------------------
 # Set a metric value. If no timestamp is provided, the system UTC epoch in ms will be automatically used.
+# INFO: Python default data types Numeric, Float String, Boolean are automatically detected and converted to their
+# respective Sparkplub B data types.
 device.data.set_value(
     name="value",
     value=0
-)
-
-# You can set a list of values+timestamps to be sent as spB Dataset Metric type.
-# IMPORTANT: You must provide the same list size for the values and timestamps, otherwise a single
-#            point will be sent ( first element )
-# You can check if a value has multiple values by checking its device.data.is_list_values("values")
-device.data.set_value(
-    name="values",
-    value=[12, 34, 45],
-    timestamp=[1728973247000, 1728973248000, 1728973249000]
 )
 
 # You can also enforce a certain spB metric type.
@@ -67,11 +54,21 @@ device.data.set_value(
     spb_data_type=MetricDataType.UInt16,
 )
 
+# For a specific value name, a list of values + timestamps to send multiple values .
+# IMPORTANT: You must provide the same list size for the values and timestamps, otherwise a single
+#            point will be sent ( first element )
+# Internally the spB DataSet metric is used to encapsulate these list of values.
+device.data.set_value(
+    name="values",
+    value=[12, 34, 45],
+    timestamp=[1728973247000, 1728973248000, 1728973249000]
+)
+
 # BYTES - a list of bytes or bytearray can be sent
 device.data.set_value(
     name="bytes",
     value=bytes([1, 2, 3, 4]),
-    # value=bytearray([1, 2, 3, 4])   # It is possible to set an bytearray
+    # value=bytearray([1, 2, 3, 4])   # It is possible to set a bytearray
 )
 
 # DATETIME - object type - value is converted to EPOC timestamp in milliseconds
@@ -93,7 +90,7 @@ device.data.set_value(
 device.data.set_value(
     name="uuid",
     value=uuid.uuid4()
-    # Note: it can also be sent as bytes or bytearray
+    # Note: it can also be sent as string and enforce data type
     # value='2a7e4d22-795a-44b8-96f8-cc74e24df6fe',
     # spb_data_type = MetricDataType.UUID
 )
@@ -109,6 +106,11 @@ device.data.set_value(
         "Status": ["Normal", "Warning", "Alert"]
     }
 )
+
+# --- Attributes   ----------------------------------------------------------------------------------------------------
+device.attributes.set_value("description", "Simple EoN Device node")
+device.attributes.set_value("type", "Simulated-EoND-device")
+device.attributes.set_value("version", "0.01")
 
 # --- Commands  --------------------------------------------------------------------------------------------------------
 device.commands.set_value(name="rebirth",

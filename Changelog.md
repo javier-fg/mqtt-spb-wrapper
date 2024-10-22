@@ -1,8 +1,12 @@
 # Revision log - Sparkplug B Wrapper
 
+## Version 2.0.2 - added support for other spB Metric datatypes - 241022
 
+- modifications to support extra spB metric types ( bytes, File, UUID, DataSet . . .)
+- Added Unit tests for most of the basic wrapper classes
+- Modify simple_eond_example.py to show all possible Value types.
 
-## Version 2.0.1 - spB Application and SCADA entities
+## Version 2.0.1 - spB Application and SCADA entities - 
 
 **IMPORTANT:** Be aware that some of the previous classes method names may be updated, to unify name convention and clarity. Therefore, review your code if you have used previous library versions.
 

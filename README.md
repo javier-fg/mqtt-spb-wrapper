@@ -1,12 +1,10 @@
 **IMPORTANT:** Please review changelog.md for latest library changes.
 
-
-
 # Python Sparkplug B Wrapper
 
-This python module implements an easy way to create Sparkplug B entities on Python, abstracting one level up the already existing python Eclipse Tahu Sparkplug B v1.0 core modules.
+This python library implements an easy way to create Sparkplug B entities on Python, abstracting one level up the already existing python Eclipse Tahu Sparkplug B v1.0 core python modules.
 
-The *mqtt-spb-wrapper* python module provides the following high level objects to handle generic Sparkplug B entities and MQTT communications in an easy way:
+The *mqtt-spb-wrapper* python module provides the following high level classes to handle generic Sparkplug B entities and MQTT communications in an easy way:
 
 - **MqttSpbEntityEdgeNode** - End of Network (EoN) entity 
   - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD as well as to the STATUS messages from the SCADA application.
@@ -19,82 +17,155 @@ The *mqtt-spb-wrapper* python module provides the following high level objects t
 
 Other helper classes:
 
-- **SpbPayload**
+- **SpbPayloadParser**
   - Class to decode the Sparkplug B binary payloads ( Google protobuf format )
 - **SpbTopic** 
   - Class to parse, decode and handle MQTT-based Sparkplug B topics.
 - **SpbEntity**
   - Class to encapsulate all basic Sparkplug B entity ( no MQTT functionality )
-    
-
-
-## Library Examples
-
-The repository includes a folder with some basic examples for the different type of entities, **see the folder /examples** in this repository for more examples.
 
 ### Basic EoN Device
 
-The following code shows how to create a basic Sparkplug B Device Node (  called EoND ) entity that transmit some simple data.
+The following code shows how to create a basic Sparkplug B Device Node ( called EoND ) entity that transmit some simple data ( increment counter ).
 
 ```python
-
 import time
-from mqtt_spb_wrapper import *
+from datetime import datetime
+import uuid
+
+from mqtt_spb_wrapper import MetricDataType, MqttSpbEntityDevice
 
 _DEBUG = True  # Enable debug messages
+
+# MQTT Broker parameters
+_MQTT_HOST = "localhost"
+_MQTT_PORT = 1883
+_MQTT_USER = ""
+_MQTT_PASSW = ""
+
+# Sparkplug B parameters - Create the spB entity object
+domain_name = "TestDomain"
+edge_node_name = "Gateway-001"
+device_name = "SimpleEoND-01"
 
 print("--- Sparkplug B example - End of Node Device - Simple")
 
 
 def callback_command(payload):
-    print("DEVICE received CMD: %s" % (payload))
+    print("DEVICE received CMD: %s" % str(payload))
 
 
-def callback_cmd_test(value):
-    print("   CMD test received - value: " + str(value))
+def callback_cmd_test(data_value):
+    print("   CMD test received - value: " + str(data_value))
 
 
-# Create the spB entity object
-domain_name = "Group-001"
-edge_node_name = "Gateway-001"
-device_name = "SimpleEoND-01"
-
+# Create a new SpB EoND Entity
 device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
 
 device.on_command = callback_command  # Callback for received device commands
 
-# Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------
 
-# --- Attributes
-device.attributes.set_value("description", "Simple EoN Device node")
-device.attributes.set_value("type", "Simulated-EoND-device")
-device.attributes.set_value("version", "0.01")
+# Set the device Attributes, Data and Commands that will be sent on the DBIRTH message --------------------------------
 
-# --- Data / Telemetry
+# --- Data / Telemetry  -----------------------------------------------------------------------------------------------
 # Set a metric value. If no timestamp is provided, the system UTC epoch in ms will be automatically used.
+# INFO: Python default data types Numeric, Float String, Boolean are automatically detected and converted to their
+# respective Sparkplub B data types.
 device.data.set_value(
     name="value",
     value=0
 )
 
-# You can set a list of values for the metric. You must provide the same list size for the timestamps.
-# You can check if a value has multiple values by checking its "is_single_value()" method, like device.data.is_single_value("values")
+# You can also enforce a certain spB metric type.
+# NOTE: if no spB metric type is provided, the type will be inferred from the python data type:
+#       bool, numeric = float, string, bytes
+device.data.set_value(
+    name="uint16",
+    value=125,
+    spb_data_type=MetricDataType.UInt16,
+)
+
+# For a specific value name, a list of values + timestamps to send multiple values .
+# IMPORTANT: You must provide the same list size for the values and timestamps, otherwise a single
+#            point will be sent ( first element )
+# Internally the spB DataSet metric is used to encapsulate these list of values.
 device.data.set_value(
     name="values",
     value=[12, 34, 45],
     timestamp=[1728973247000, 1728973248000, 1728973249000]
 )
 
-# --- Commands
-device.commands.set_value("rebirth", False)
-device.commands.set_value("test", False,
-                          callback_on_change=callback_cmd_test)  # If a test command is received, the callback will be executed.
+# BYTES - a list of bytes or bytearray can be sent
+device.data.set_value(
+    name="bytes",
+    value=bytes([1, 2, 3, 4]),
+    # value=bytearray([1, 2, 3, 4])   # It is possible to set a bytearray
+)
 
-# Connect to the broker --------------------------------------------
+# DATETIME - object type - value is converted to EPOC timestamp in milliseconds
+device.data.set_value(
+    name="datetime",
+    value=datetime.now()
+)
+
+# FILE - Can be sent from the open() object or you can send it as bytes or as a file
+device.data.set_value(
+    name="file",
+    value=open("requirements.txt", "r")
+    # Note: it can also be sent as bytes or bytearray
+    # value=file_bytes,
+    # spb_data_type = MetricDataType.File
+)
+
+# UUID - Universal Unique ID
+device.data.set_value(
+    name="uuid",
+    value=uuid.uuid4()
+    # Note: it can also be sent as string and enforce data type
+    # value='2a7e4d22-795a-44b8-96f8-cc74e24df6fe',
+    # spb_data_type = MetricDataType.UUID
+)
+
+# DATASET - Table of values ( columns + rows ) provided as dictionary in python.
+# IMPORTANT: dictionary elements should be provided like colum_name: list(values), and
+#            all column values should be the same size
+device.data.set_value(
+    name="dataset",
+    value={
+        "Temperature": [23.5, 22.0, 21.8],
+        "Humidity": [60.2, 58.9, 59.5],
+        "Status": ["Normal", "Warning", "Alert"]
+    }
+)
+
+# --- Attributes   ----------------------------------------------------------------------------------------------------
+device.attributes.set_value("description", "Simple EoN Device node")
+device.attributes.set_value("type", "Simulated-EoND-device")
+device.attributes.set_value("version", "0.01")
+
+# --- Commands  --------------------------------------------------------------------------------------------------------
+device.commands.set_value(name="rebirth",
+                          value=False
+                          )
+
+# You can set a callback function. Data value will be passed as argument.
+device.commands.set_value(name="test",
+                          value=False,
+                          callback_on_change=callback_cmd_test
+                          )
+
+# Connect to the broker ------------------------------------------------------------------------------------------------
 _connected = False
 while not _connected:
-    print("Trying to connect to broker...")
-    _connected = device.connect("localhost", 1883)
+    print("Trying to connect to broker %s:%d ..." % (_MQTT_HOST, _MQTT_PORT))
+
+    _connected = device.connect(
+        host=_MQTT_HOST,
+        port=_MQTT_PORT,
+        user=_MQTT_USER,
+        password=_MQTT_PASSW,
+    )
+
     if not _connected:
         print("  Error, could not connect. Trying again in a few seconds ...")
         time.sleep(3)
@@ -103,6 +174,7 @@ while not _connected:
 device.publish_birth()
 
 # Send some telemetry values ---------------------------------------
+# NOTE: From another app, you can try to send commands to this entity
 
 value = 0  # Simple counter
 
@@ -128,9 +200,18 @@ print("Disconnecting device")
 device.disconnect()
 
 print("Application finished !")
-
 ```
 
+## Library Examples
+
+The repository includes a folder with some basic examples for the different type of entities, **see the folder /examples** in this repository for more examples.
+
+- **simple_eond_example.py** - Example shown in following section
+- **spb_eond_simple.py** - Simplified example for an spB Device ( EoND ) - HelloWorld example
+- **spb_eond_csv_player.py** - Example that creates a spB Device ( EoND) and sends data from a CSV file.
+- **spb_app_listener.py** - Example that creates an application spB Entity to listen to a domain data and devices events.
+- **spb_scada_example.py** - Creates a spB SCADA/Host application to discover domain entities, events and send some basic commands. Can be used in conjuntion with the spb_eond_simple.py example. 
+- **mqtt_listener_example.py** - Simple paho mqtt client to display MQTT data and decode spB payloads.
 
 
 ## Eclipse Sparkplug B v1.0
