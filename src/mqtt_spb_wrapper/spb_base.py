@@ -453,6 +453,7 @@ class SpbEntity:
         spb_domain_name (str): spB Domain name
         spb_eon_name (str): spB Edge of Network (EoN) node name
         spb_eon_device_name (str, optional): spB Edge of Network Devide (EoND) node name. If set to None, the entity is of an EoN type.
+        spb_host_app_name (str, optional): spB Primary Host(AKA SCADA) Application name. If set to None, will listen to any STATE messages.
         debug_enabled ( bool, optional): Enable console debug messages
         debug_id ( str, optional ): Console debug identification for the class messages.
     """
@@ -462,6 +463,7 @@ class SpbEntity:
             spb_domain_name: str,
             spb_eon_name: str,
             spb_eon_device_name: str = None,
+            spb_host_app_name: str = None,
             debug_enabled: bool = False,
             debug_id: str = "SPB_ENTITY",
     ):
@@ -478,6 +480,7 @@ class SpbEntity:
         self._spb_domain_name = spb_domain_name
         self._spb_eon_name = spb_eon_name
         self._spb_eon_device_name = spb_eon_device_name
+        self._spb_host_app_name = spb_host_app_name
 
         if spb_eon_device_name is None:
             self._entity_domain = "spBv1.%s.%s" % (self._spb_domain_name, self._spb_eon_name)
@@ -990,26 +993,49 @@ class SpbTopic:
         self.topic = topic_str
 
         self.namespace = topic_fields[0]
-        self.domain_name = topic_fields[1]
-        self.message_type = topic_fields[2]
-        self.eon_name = None
-        self.eon_device_name = None
+        if "spBv1.0/STATE" in topic_str:
+            self.domain_name = None
+            self.message_type = "STATE"
 
-        self.entity_name = None
+            self.eon_name = None
+            self.eon_device_name = None
+            self.entity_name = None
 
-        # If EoN
-        if len(topic_fields) > 3:
-            self.eon_name = topic_fields[3]
-            self.entity_name = self.eon_name
+            # If EoN
+            if len(topic_fields) > 2:
+                self.eon_name = topic_fields[2]
+                self.entity_name = self.eon_name
 
-        # If EoN device type
-        if len(topic_fields) > 4:
-            self.eon_device_name = topic_fields[4]
-            self.entity_name = self.eon_device_name
+            # If EoN device type
+            if len(topic_fields) > 3:
+                self.eon_device_name = topic_fields[3]
+                self.entity_name = self.eon_device_name
 
-        self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
-        if self.eon_device_name is not None:
-            self.domain += ".%s" % self.eon_device_name
+            self.domain = "%s.%s" % (self.namespace, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
+
+        else:
+            self.domain_name = topic_fields[1]
+            self.message_type = topic_fields[2]
+
+            self.eon_name = None
+            self.eon_device_name = None
+            self.entity_name = None
+
+            # If EoN
+            if len(topic_fields) > 3:
+                self.eon_name = topic_fields[3]
+                self.entity_name = self.eon_name
+
+            # If EoN device type
+            if len(topic_fields) > 4:
+                self.eon_device_name = topic_fields[4]
+                self.entity_name = self.eon_device_name
+
+            self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
+            if self.eon_device_name is not None:
+                self.domain += ".%s" % self.eon_device_name
 
         return str(self)
 
@@ -1023,14 +1049,21 @@ class SpbTopic:
 
         self.namespace = "spBv1.0"
 
-        out = "%s/%s/%s/%s" % (
-            self.namespace,
-            self.domain_name,
-            self.message_type,
-            self.eon_name,
-        )
+        if self.message_type == "STATE":
+            out = "%s/%s/%s" % (
+                self.namespace,
+                self.message_type,
+                self.eon_name,
+            )
+        else:
+            out = "%s/%s/%s/%s" % (
+                self.namespace,
+                self.domain_name,
+                self.message_type,
+                self.eon_name,
+            )
 
-        if not self.eon_device_name:
+        if self.eon_device_name:
             out += "/" + self.eon_device_name
 
         return out
