@@ -392,7 +392,7 @@ def addMetricDataset_from_dict(payload, name, alias, data):
     types = []
     for value in first_row:
         if isinstance(value, int):
-            types.append(DataSetDataType.Int32)
+            types.append(DataSetDataType.Int64)
         elif isinstance(value, float):
             types.append(DataSetDataType.Float)
         elif isinstance(value, str):
@@ -414,7 +414,7 @@ def addMetricDataset_from_dict(payload, name, alias, data):
             value = data[col][i]
             # Add the value based on its type
             if isinstance(value, int):
-                element.int_value = value
+                element.long_value = value
             elif isinstance(value, float):
                 element.float_value = value
             elif isinstance(value, str):

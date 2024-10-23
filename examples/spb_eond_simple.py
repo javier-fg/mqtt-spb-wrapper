@@ -75,7 +75,9 @@ print("--- Sparkplug B example - End of Node Device - Simple")
 device = MqttSpbEntityDevice(spb_domain_name=_config_spb_domain_name,
                              spb_eon_name=_config_spb_eon_name,
                              spb_eon_device_name=_config_spb_eon_device_name,
-                             debug_enabled=_DEBUG)
+                             debug_enabled=_DEBUG,
+                             retain_birth=True,
+                             )
 
 # Configure callbacks
 device.on_message = callback_message    # Received messages
