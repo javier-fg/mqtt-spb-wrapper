@@ -1,5 +1,9 @@
 # Revision log - Sparkplug B Wrapper
 
+## Version 2.0.3 - remove unnecessary dependency - 241025
+
+- removed ghost pandas dependency ( unnecessary )
+
 ## Version 2.0.2 - added support for other spB Metric datatypes - 241022
 
 - modifications to support extra spB metric types ( bytes, File, UUID, DataSet . . .)
