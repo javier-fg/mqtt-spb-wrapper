@@ -12,7 +12,6 @@
 # ********************************************************************************/
 import time
 from .sparkplug_b_pb2 import Payload
-import pandas as pd
 
 seqNum = 0
 bdSeq = 0
