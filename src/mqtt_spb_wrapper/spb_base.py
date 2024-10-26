@@ -32,7 +32,7 @@ class MetricValue:
             self,
             name: str,
             value,
-            timestamp=None,
+            timestamp:int = None,
             callback_on_change: Callable[[Any], None] = None,
             spb_data_type: MetricDataType = None,
             spb_alias_num: int = None,
@@ -63,7 +63,7 @@ class MetricValue:
                 if timestamp is None:
                     self._timestamp = [int(time.time() * 1000)]
                 else:
-                    self._timestamp = [timestamp]
+                    self._timestamp = [int(timestamp)]
 
         # Data type detection
         if spb_data_type is not None:
@@ -92,9 +92,10 @@ class MetricValue:
             "name": self.name,
             "value": self.value,
             "timestamp": self.timestamp,
+            "spb_data_type": self.spb_data_type,
             "is_updated": is_updated,
             "is_list_values": self.is_list_values(),
-            "spb_data_type": self.spb_data_type,
+            "has_callback": self.has_callback(),
         }
         self.is_updated = is_updated
         return data
@@ -155,7 +156,7 @@ class MetricValue:
             if isinstance(timestamp, list):
                 self._timestamp = timestamp
             else:
-                self._timestamp = [timestamp]
+                self._timestamp = [int(timestamp)]
 
     def timestamp_update(self):
         """
