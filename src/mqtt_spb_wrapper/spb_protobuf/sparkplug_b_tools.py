@@ -11,6 +11,9 @@
 # *   Saxion - Javier FG
 # ********************************************************************************/
 from .sparkplug_b import MetricDataType
+from datetime import datetime
+from io import TextIOWrapper, BufferedReader
+import uuid
 
 ######################################################################
 # Helper method for getting the value field from metrics
@@ -60,3 +63,32 @@ def getMetricValue(metric):
 
     return None
 ######################################################################
+
+
+######################################################################
+# Helper method for getting the spB data type from a Python generic value
+######################################################################
+def getValueDataType ( value ):
+
+    # Get data type
+    if isinstance(value, str):
+        return MetricDataType.Text
+    elif isinstance(value, bool):
+        return MetricDataType.Boolean
+    elif isinstance(value, int):
+        return MetricDataType.Int64
+    elif isinstance(value, float):
+        return MetricDataType.Double
+    elif isinstance(value, bytes) or isinstance(value, bytearray):
+        return MetricDataType.Bytes
+    elif isinstance(value, dict):
+        return MetricDataType.DataSet
+    elif isinstance(value, datetime):
+        return MetricDataType.DateTime
+    elif isinstance(value, uuid.UUID):
+        return MetricDataType.UUID
+    elif isinstance(value, TextIOWrapper) or isinstance(value, BufferedReader):
+        return MetricDataType.File
+    else:
+        return MetricDataType.Unknown
+

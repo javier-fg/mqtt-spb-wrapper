@@ -7,7 +7,7 @@ import uuid
 import base64
 
 from google.protobuf.json_format import MessageToDict
-from .spb_protobuf import getDdataPayload, getNodeBirthPayload, getDeviceBirthPayload, Payload
+from .spb_protobuf import getDdataPayload, getNodeBirthPayload, getDeviceBirthPayload, Payload, getValueDataType
 from .spb_protobuf import addMetric, MetricDataType
 from .spb_protobuf.sparkplug_b import addMetricDataset_from_dict
 
@@ -69,27 +69,10 @@ class MetricValue:
         if spb_data_type is not None:
             self._spb_data_type = spb_data_type
         else:
-            # Get data type
-            if isinstance(value, str):
-                self._spb_data_type = MetricDataType.Text
-            elif isinstance(value, bool):
-                self._spb_data_type = MetricDataType.Boolean
-            elif isinstance(value, int):
-                self._spb_data_type = MetricDataType.Int64
-            elif isinstance(value, float):
-                self._spb_data_type = MetricDataType.Double
-            elif isinstance(value, bytes) or isinstance(value, bytearray):
-                self._spb_data_type = MetricDataType.Bytes
-            elif isinstance(value, dict):
-                self._spb_data_type = MetricDataType.DataSet
-            elif isinstance(value, datetime):
-                self._spb_data_type = MetricDataType.DateTime
-            elif isinstance(value, uuid.UUID):
-                self._spb_data_type = MetricDataType.UUID
-            elif isinstance(value, TextIOWrapper) or isinstance(value, BufferedReader):
-                self._spb_data_type = MetricDataType.File
-            else:
-                # self._spb_data_type = MetricDataType.Unknown
+            self._spb_data_type = getValueDataType(value)
+
+            # If unknown type, trigger an exception
+            if self._spb_data_type is MetricDataType.Unknown:
                 raise ValueError(f"Unsupported value type for metric '{name}': {type(value)}")
 
     def is_list_values(self):

@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 from .spb_protobuf import getDdataPayload
 from .spb_protobuf import addMetric
+from .spb_protobuf import getValueDataType
 
 from .spb_base import SpbTopic, SpbPayloadParser
 from .mqtt_spb_entity import SpbEntity
@@ -170,7 +171,7 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         Args:
             spb_domain_name:    Sparkplug B domain name
             spb_scada_name:     Scada Application ID ( will be part of the MQTT topic )
-            debug_info:         Enable / Dissable debug information.
+            debug_info:         Enable / Disable debug information.
         """
 
         # Initialized base class
@@ -249,7 +250,7 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
 
         # Add the list of commands to the payload metrics
         for k in commands:
-            addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
+            addMetric(payload, k, None, getValueDataType(commands[k]), commands[k])
 
         # Send payload if there is new data
         if eond_name is not None:
