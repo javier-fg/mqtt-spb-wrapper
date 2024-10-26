@@ -228,14 +228,19 @@ class MqttSpbEntityApp(MqttSpbEntity):
 
     def _mqtt_on_connect(self, client, userdata, flags, rc):
 
-        # Call the parent method
-        super()._mqtt_on_connect(client, userdata, flags, rc)
-
         # Subscribe to all group topics
         if rc == 0:
-            topic = "spBv1.0/" + self.spb_domain_name + "/#"
+            topic = "%s/%s/#" % (self._spb_namespace,
+                                 self._spb_domain_name)
             self._mqtt.subscribe(topic)
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
+
+        else:
+            self._logger.error(" %s - Could not connect to MQTT server !" % self._entity_domain)
+
+        # Execute the callback function if it is not None
+        if self.on_connect is not None:
+            self.on_connect(rc)
 
     def _mqtt_on_message(self, client, userdata, msg):
 
