@@ -254,13 +254,18 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
 
         # Send payload if there is new data
         if eond_name is not None:
-            topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + eon_name + "/" + eond_name
+            topic = "%s/%s/DCMD/%s/%s" % (self._spb_namespace,
+                                          self._spb_domain_name,
+                                          eon_name,
+                                          eond_name)
         else:
-            topic = "spBv1.0/" + self.spb_domain_name + "/NCMD/" + eon_name
+            topic = "%s/%s/NCMD/%s" % (self._spb_namespace,
+                                       self._spb_domain_name,
+                                       eon_name)
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
-            self._mqtt.publish(topic, payload_bytes, 0, False)
+            self._mqtt_payload_publish(topic, payload_bytes)
             self._logger.debug("%s - Published COMMAND message to %s" % (self._entity_domain, topic))
             return True
         else:

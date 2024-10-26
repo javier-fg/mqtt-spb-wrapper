@@ -1,6 +1,6 @@
 from .mqtt_spb_entity import MqttSpbEntity
 
-from .spb_protobuf import getDdataPayload
+from .spb_protobuf import getDdataPayload, getValueDataType
 from .spb_protobuf import addMetric
 
 
@@ -39,15 +39,18 @@ class MqttSpbEntityEdgeNode(MqttSpbEntity):
 
         # Add the list of commands to the payload metrics
         for k in commands:
-            addMetric(payload, k, None, self._spb_data_type(commands[k]), commands[k])
+            addMetric(payload, k, None, getValueDataType(commands[k]), commands[k])
 
         # Send payload if there is new data
-        topic = "spBv1.0/" + self.spb_domain_name + "/DCMD/" + self._spb_eon_name + "/" + spb_eon_device_name
+        topic = "%s/%s/DCMD/%s/%s" % (self._spb_namespace,
+                                      self._spb_domain_name,
+                                      self._spb_eon_name,
+                                      spb_eon_device_name)
 
         if payload.metrics:
             payload_bytes = bytearray(payload.SerializeToString())
             self._loopback_topic = topic
-            self._mqtt.publish(topic, payload_bytes, 0, False)
+            self._mqtt_payload_publish(topic, payload_bytes)
 
             self._logger.info("%s - Published COMMAND message to %s" % (self._entity_domain, topic))
 
