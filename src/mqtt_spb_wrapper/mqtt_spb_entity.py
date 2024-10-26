@@ -48,7 +48,9 @@ class MqttSpbEntity(SpbEntity):
         if self._entity_is_scada:
             topic = "%s/%s/STATE/%s" % (self._spb_domain_name, self._spb_eon_name, self._spb_eon_device_name)
             self._loopback_topic = topic
-            self._mqtt.publish(topic, "ONLINE".encode("utf-8"), qos, True)
+            # Send payload to the MQTT broker
+            self._mqtt_publish_data(topic, "ONLINE".encode("utf-8"), qos, True)
+
             self._logger.info("%s - Published STATE BIRTH message " % self._entity_domain)
             self.is_birth_published = True
             return
@@ -73,7 +75,7 @@ class MqttSpbEntity(SpbEntity):
                                            self._spb_eon_device_name)
 
         self._loopback_topic = topic
-        self._mqtt.publish(topic, payload_bytes, qos, self._retain_birth)
+        self._mqtt_publish_data(topic, payload_bytes, qos, self._retain_birth)
 
         self._logger.info("%s - Published BIRTH message" % self._entity_domain)
 
@@ -115,7 +117,7 @@ class MqttSpbEntity(SpbEntity):
                                                self._spb_eon_device_name)
 
             self._loopback_topic = topic
-            self._mqtt.publish(topic, payload_bytes, qos, False)
+            self._mqtt_publish_data(topic, payload_bytes, qos)
 
             self._logger.debug("%s - Published DATA message %s" % (self._entity_domain, topic))
             return True
@@ -256,6 +258,26 @@ class MqttSpbEntity(SpbEntity):
             return False
         else:
             return self._mqtt.is_connected()
+
+    def _mqtt_publish_data(self, topic: str, payload:bytes, qos:int = 0, retrain:bool = False):
+        """
+            Send byte payload via MQTT client
+        Args:
+            topic:  MQTT topic
+            payload: Payload to be sent
+            qos: Quality of service
+            retrain: retrain flag for message
+
+        Returns: bool true if successful
+        """
+
+        if not self.is_connected():
+            return False
+
+        # send payload to broker
+        res = self._mqtt.publish(topic, payload, qos, retrain)
+
+        return res.is_published()
 
     def _mqtt_on_connect(self, client, userdata, flags, rc):
 
