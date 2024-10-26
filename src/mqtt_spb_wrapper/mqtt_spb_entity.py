@@ -46,7 +46,9 @@ class MqttSpbEntity(SpbEntity):
 
         # If it is a type entity SCADA, change the BIRTH certificate
         if self._entity_is_scada:
-            topic = "%s/%s/STATE/%s" % (self._spb_domain_name, self._spb_eon_name, self._spb_eon_device_name)
+            topic = "%s/%s/STATE/%s" % (self._spb_namespace,
+                                        self._spb_domain_name,
+                                        self._spb_eon_name)
             self._loopback_topic = topic
             # Send payload to the MQTT broker
             self._mqtt_payload_publish(topic, "ONLINE".encode("utf-8"), qos, True)
@@ -252,7 +254,7 @@ class MqttSpbEntity(SpbEntity):
                     topic = "%s/%s/STATE/%s" % (self._spb_namespace,
                                                 self._spb_domain_name,
                                                 self._spb_eon_name)
-                    self._mqtt_payload_set_last_will(topic, "OFFLINE".encode("utf-8"))
+                    self._mqtt_payload_publish(topic, "OFFLINE".encode("utf-8"))
 
                 else:  # Normal node
                     payload = getNodeDeathPayload()
@@ -266,7 +268,7 @@ class MqttSpbEntity(SpbEntity):
                                                         self._spb_domain_name,
                                                         self._spb_eon_name,
                                                         self._spb_eon_device_name)
-                    self._mqtt_payload_set_last_will(topic, payload_bytes)  # Set message
+                    self._mqtt_payload_publish(topic, payload_bytes)  # Set message
 
             # Disconnect from MQTT broker
             self._mqtt.loop_stop()

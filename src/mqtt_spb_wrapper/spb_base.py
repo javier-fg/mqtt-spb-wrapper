@@ -1002,7 +1002,7 @@ class SpbTopic:
             raise ValueError(f"Invalid topic string: {topic_str}")
 
         # Check name space
-        if topic_fields[0] != "spBv1.0" or topic_fields[0] != "sspBv1.0":
+        if topic_fields[0] != "spBv1.0" and topic_fields[0] != "sspBv1.0":
             raise ValueError(f"Invalid topic string: {topic_str}")
 
         self.topic = topic_str

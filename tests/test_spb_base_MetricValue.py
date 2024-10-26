@@ -112,9 +112,10 @@ class TestMetricValue(unittest.TestCase):
             "name": "test_metric",
             "value": 42,
             "timestamp": mv.timestamp,
+            "spb_data_type": mv.spb_data_type,
             "is_updated": True,
             "is_list_values": False,
-            "spb_data_type": mv.spb_data_type,
+            'has_callback': False
         }
         self.assertEqual(mv.as_dict(), expected_dict)
 
