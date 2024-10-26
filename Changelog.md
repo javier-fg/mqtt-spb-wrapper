@@ -1,5 +1,13 @@
 # Revision log - Sparkplug B Wrapper
 
+## Version 2.0.4 - PENDING RELEASE
+
+- restructure of _mqtt.publish calls, now via a generic function ( for future usage)
+- restructure the creation of topics, now via internal _spb_namespace property instead of hardcoded namespace
+- added a more complex example SCADA + EoND ( simple_spb_example.py)
+- fixed issue due to MetricValue callback end loop due to rebirth message. Now callback are disabled if updating data via BIRTH message.
+- 
+
 ## Version 2.0.3 - remove unnecessary dependency - 241025
 
 - removed ghost pandas dependency ( unnecessary )
