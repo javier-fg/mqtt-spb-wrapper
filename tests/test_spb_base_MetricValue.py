@@ -147,7 +147,7 @@ class TestMetricValue(unittest.TestCase):
         """Test the has_callback method."""
         mv = MetricValue(name="test", value=1)
         self.assertFalse(mv.has_callback())
-        mv.callback_on_change = lambda x: x
+        mv.callback = lambda x: x
         self.assertTrue(mv.has_callback())
 
     def test_metric_with_alias(self):

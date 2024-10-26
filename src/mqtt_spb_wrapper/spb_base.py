@@ -167,7 +167,7 @@ class MetricValue:
         self.timestamp = int(time.time() * 1000)
 
     @property
-    def callback_on_change(self) -> Callable[[Any], None]:
+    def callback(self) -> Callable[[Any], None]:
         """
             Callback function reference for on value change events
 
@@ -176,8 +176,8 @@ class MetricValue:
         """
         return self._callback
 
-    @callback_on_change.setter
-    def callback_on_change(self, callback: Callable[[Any], None]):
+    @callback.setter
+    def callback(self, callback: Callable[[Any], None]):
         self._callback = callback
 
     def has_callback(self):
@@ -326,6 +326,18 @@ class MetricGroup:
 
         """
         return len(self._items)
+
+    def set_callback(self,
+                     name: str,
+                     callback: Callable[[Any], None]
+                     ) -> bool:
+
+        # If exist update the value, otherwise add the element.
+        if name in self._items.keys():
+            self._items[name].callback = callback
+            return True
+        else:
+            return False
 
     def set_value(self,
                   name: str, value,
