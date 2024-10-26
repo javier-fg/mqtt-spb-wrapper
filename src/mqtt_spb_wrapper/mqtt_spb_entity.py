@@ -14,7 +14,7 @@ class MqttSpbEntity(SpbEntity):
                  retain_birth=False,
                  debug_enabled=False,
                  debug_id="MQTT_SPB_ENTITY",
-                 entity_is_scada=False
+                 entity_is_scada=False,
                  ):
 
         super().__init__(spb_domain_name=spb_domain_name,
@@ -49,7 +49,7 @@ class MqttSpbEntity(SpbEntity):
             topic = "%s/%s/STATE/%s" % (self._spb_domain_name, self._spb_eon_name, self._spb_eon_device_name)
             self._loopback_topic = topic
             # Send payload to the MQTT broker
-            self._mqtt_publish_data(topic, "ONLINE".encode("utf-8"), qos, True)
+            self._mqtt_payload_publish(topic, "ONLINE".encode("utf-8"), qos, True)
 
             self._logger.info("%s - Published STATE BIRTH message " % self._entity_domain)
             self.is_birth_published = True
@@ -75,7 +75,7 @@ class MqttSpbEntity(SpbEntity):
                                            self._spb_eon_device_name)
 
         self._loopback_topic = topic
-        self._mqtt_publish_data(topic, payload_bytes, qos, self._retain_birth)
+        self._mqtt_payload_publish(topic, payload_bytes, qos, self._retain_birth)
 
         self._logger.info("%s - Published BIRTH message" % self._entity_domain)
 
@@ -117,7 +117,7 @@ class MqttSpbEntity(SpbEntity):
                                                self._spb_eon_device_name)
 
             self._loopback_topic = topic
-            self._mqtt_publish_data(topic, payload_bytes, qos)
+            self._mqtt_payload_publish(topic, payload_bytes, qos)
 
             self._logger.debug("%s - Published DATA message %s" % (self._entity_domain, topic))
             return True
@@ -204,7 +204,7 @@ class MqttSpbEntity(SpbEntity):
                 topic = "%s/%s/STATE/%s" % (self._spb_namespace,
                                                self._spb_domain_name,
                                                self._spb_eon_name)
-                self._mqtt.will_set(topic, "OFFLINE".encode("utf-8"), 0, True)  # Set message
+                self._mqtt_payload_set_last_will(topic, "OFFLINE".encode("utf-8"))  # Set message
 
             else:  # Normal node
                 payload = getNodeDeathPayload()
@@ -218,8 +218,7 @@ class MqttSpbEntity(SpbEntity):
                                                    self._spb_domain_name,
                                                    self._spb_eon_name,
                                                    self._spb_eon_device_name)
-                # TODO generate a class method.
-                self._mqtt.will_set(topic, payload_bytes, 0, False)  # Set message
+                self._mqtt_payload_set_last_will(topic, payload_bytes)  # Set message
 
         # MQTT Connect
         self._logger.info("%s - Trying to connect MQTT server %s:%d" % (self._entity_domain, host, port))
@@ -246,11 +245,35 @@ class MqttSpbEntity(SpbEntity):
 
         if self._mqtt is not None:
 
+            # Send the DEATH message -
+            # If you do a graceful disconnect, the last will is not published automatically by the MQTT Broker.
+            if not skip_death_publish:
+                if self._entity_is_scada:  # If it is a type entity SCADA, change the DEATH certificate
+                    topic = "%s/%s/STATE/%s" % (self._spb_namespace,
+                                                self._spb_domain_name,
+                                                self._spb_eon_name)
+                    self._mqtt_payload_set_last_will(topic, "OFFLINE".encode("utf-8"))
+
+                else:  # Normal node
+                    payload = getNodeDeathPayload()
+                    payload_bytes = bytearray(payload.SerializeToString())
+                    if self._spb_eon_device_name is None:  # EoN
+                        topic = "%s/%s/NDEATH/%s" % (self._spb_namespace,
+                                                     self._spb_domain_name,
+                                                     self._spb_eon_name)
+                    else:
+                        topic = "%s/%s/DDEATH/%s/%s" % (self._spb_namespace,
+                                                        self._spb_domain_name,
+                                                        self._spb_eon_name,
+                                                        self._spb_eon_device_name)
+                    self._mqtt_payload_set_last_will(topic, payload_bytes)  # Set message
+
             # Disconnect from MQTT broker
             self._mqtt.loop_stop()
             time.sleep(0.1)
             self._mqtt.disconnect()
             time.sleep(0.1)
+
         self._mqtt = None
 
     def is_connected(self):
@@ -259,7 +282,7 @@ class MqttSpbEntity(SpbEntity):
         else:
             return self._mqtt.is_connected()
 
-    def _mqtt_publish_data(self, topic: str, payload:bytes, qos:int = 0, retrain:bool = False):
+    def _mqtt_payload_publish(self, topic: str, payload:bytes, qos:int = 0, retrain:bool = False):
         """
             Send byte payload via MQTT client
         Args:
@@ -278,6 +301,13 @@ class MqttSpbEntity(SpbEntity):
         res = self._mqtt.publish(topic, payload, qos, retrain)
 
         return res.is_published()
+
+
+    def _mqtt_payload_set_last_will (self, topic: str, payload:bytes, qos:int = 1, retrain:bool = False):
+
+        # Set last will payload
+        self._mqtt.will_set(topic, payload, qos, retrain)
+
 
     def _mqtt_on_connect(self, client, userdata, flags, rc):
 
