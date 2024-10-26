@@ -346,6 +346,7 @@ class MetricGroup:
                   callback_on_change=None,
                   spb_alias_num=None,
                   spb_data_type=None,
+                  skip_callback:bool = False,
                   ):
         """
         Initialize/set a metric value
@@ -356,6 +357,7 @@ class MetricGroup:
             timestamp: Epoc timestamp in milliseconds. If set to None timestamp set to current UTC timestamp.
             callback_on_change: function reference for on change events.
             spb_data_type: MetricDataType - If None, the type will be automatically assigned.
+            skip_callback: If true, the execution of callback will be skipped ( typically used on Birth messages )
 
         Returns: boolean - operation successful
 
@@ -368,7 +370,20 @@ class MetricGroup:
         # If exist update the value, otherwise add the element.
         if name in self._items.keys():
             self._items[name].timestamp = timestamp
-            self._items[name].value = value
+
+            # Setting the MetricValue.value will trigger the callback ( if callback is set ).
+            # We can enforce to skip the callback on value change ( typically on birth messages ).
+            if not skip_callback:
+                self._items[name].value = value
+            else:
+                # Save callback reference, and set it to None
+                temp_callback = self._items[name].callback
+                self._items[name].callback = None
+                # Update value
+                self._items[name].value = value
+                # Restore callback
+                self._items[name].callback = temp_callback
+
             return True
 
         # item was not found, then add it to the list.
@@ -676,13 +691,14 @@ class SpbEntity:
             timestamp=metric_value.timestamp
         )
 
-    def _deserialize_payload_metric(self, value_group: MetricGroup, metric_value: dict):
+    def _deserialize_payload_metric(self, value_group: MetricGroup, metric_value: dict, skip_callback: bool = False):
         """
             Parse a metric value from a spB payload and insert it into the Metric Group list of values
 
         Args:
             value_group:  Metric Group to store the new value
             metric_value: spB Metric data as dict, from spB payload
+            skip_callback: if True, upon updating the value, if a value callback on change exits, it will not be executed
 
         Returns: Nothing
 
@@ -728,6 +744,7 @@ class SpbEntity:
                         value=columns_data["values"],
                         timestamp=[int(k) for k in columns_data['timestamps']],  # Force as integer
                         spb_data_type=values_data_type,
+                        skip_callback=skip_callback,  # Dont trigger value update callback ( typically on birth data)
                     )
 
             # DICT DataSet - The values are a dictionary/dataset
@@ -738,6 +755,7 @@ class SpbEntity:
                     value=columns_data,
                     timestamp=metric_value['timestamp'],
                     spb_data_type=metric_value['datatype'],
+                    skip_callback=skip_callback,  # Dont trigger value update callback ( typically on birth data)
                 )  # update field
 
         # DEFAULT - Add it and keep the original data type
@@ -749,6 +767,7 @@ class SpbEntity:
                 value=metric_value['value'],
                 timestamp=metric_value['timestamp'],
                 spb_data_type=metric_value['datatype'],
+                skip_callback=skip_callback,  # Dont trigger value update callback ( typically on birth data)
             )  # update field
 
     def serialize_payload_birth(self):
@@ -812,7 +831,8 @@ class SpbEntity:
                     # Insert the element in the metric group
                     self._deserialize_payload_metric(
                         value_group=self.attributes,
-                        metric_value=field
+                        metric_value=field,
+                        skip_callback=True,     # Dont trigger value update callback on birth data.
                     )
 
                 elif field['name'].startswith(self.commands.birth_prefix):
@@ -823,7 +843,8 @@ class SpbEntity:
                     # Insert the element in the metric group
                     self._deserialize_payload_metric(
                         value_group=self.commands,
-                        metric_value=field
+                        metric_value=field,
+                        skip_callback=True,  # Dont trigger value update callback on birth data.
                     )
 
                 elif field['name'].startswith(self.data.birth_prefix):
@@ -834,7 +855,8 @@ class SpbEntity:
                     # Insert the element in the metric group
                     self._deserialize_payload_metric(
                         value_group=self.data,
-                        metric_value=field
+                        metric_value=field,
+                        skip_callback=True,  # Dont trigger value update callback on birth data.
                     )
 
         return payload
