@@ -121,10 +121,8 @@ class TestSpbPayloadParser(unittest.TestCase):
         """Test parsing an empty payload."""
         payload_bytes = Payload()
         payload_data = payload_bytes.SerializeToString()
-
         parser = SpbPayloadParser(payload_data)
-        self.assertIsNotNone(parser.payload)
-        self.assertNotIn('metrics', parser.payload)
+        self.assertIsNone(parser.payload)
 
     def test_parse_invalid_payload(self):
         """Test parsing an invalid payload."""

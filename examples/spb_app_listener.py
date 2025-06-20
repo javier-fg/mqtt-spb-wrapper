@@ -30,7 +30,7 @@ _DEBUG = True           # Enable debug messages
 _GHOST_SPB_APP = True   # If true, the spB App entity will not publish its BIRTH and DEATH messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_GROUP", "TestDomain")
+_config_spb_group_name = os.environ.get("SPB_GROUP", "TestGroup")
 _config_spb_app_name = os.environ.get("SPB_APP", "App-001")
 
 # Testing EoN and EoND names for automatic detection
@@ -49,7 +49,7 @@ print("--- Sparkplug B example - spB Application Entity example")
 
 #  ---------- Create the spB App entity to listen to all spB messages
 application = MqttSpbEntityApp(
-    spb_domain_name=_config_spb_domain_name,
+    spb_domain_name=_config_spb_group_name,
     spb_app_name=_config_spb_app_name,
     debug_enabled=_DEBUG
 )

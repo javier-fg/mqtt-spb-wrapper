@@ -885,7 +885,7 @@ class SpbEntity:
 
         payload = SpbPayloadParser(data_bytes).payload
 
-        if payload is not None:
+        if payload:
 
             # Iterate over the metrics to update the data fields
             for field in payload.get('metrics', []):
@@ -896,7 +896,9 @@ class SpbEntity:
                     metric_value=field
                 )
 
-        return payload
+            return payload
+        else:
+            return None
 
     def serialize_payload_cmd(self, send_all=False):
 
@@ -1083,15 +1085,21 @@ class SpbPayloadParser:
         """
         pb_payload = Payload()
 
+        payload = None      # Temp buffer for parsing data
+
         try:
             pb_payload.ParseFromString(payload_data)
-            payload = MessageToDict(pb_payload)  # Convert it to DICT for easy handeling
 
+            # If empty conversion
+            if str(pb_payload) == "":
+                raise ValueError("Invalid payload")
+
+            payload = MessageToDict(pb_payload)  # Convert it to DICT for easy handeling
 
             if "metrics" in payload.keys():
                 for i in range(len(payload['metrics'])):
 
-                    # value - Add the metrics [TYPE_value] field into [value] field for convenience
+                    # value item - Add the metrics [TYPE_value] field into [value] field for convenience
                     for k in payload['metrics'][i].keys():
                         if "Value" in k:
                             payload['metrics'][i]['value'] = payload['metrics'][i][k]
@@ -1123,17 +1131,17 @@ class SpbPayloadParser:
 
         except Exception as e:
 
-            # Check if payload is from SCADA
+            # Check if payload is from SCADA ( String type )
             try:
                 _payload = payload_data.decode()
+
+                if _payload == "OFFLINE" or _payload == "ONLINE":
+                    self.payload = _payload
+                    return self.payload
+
             except Exception as e1:
-                return None
-
-            if _payload == "OFFLINE" or _payload == "ONLINE":
-                self.payload = _payload
-                return self.payload
-
-            return None
+                pass
 
         self.payload = payload  # Save the current payload
+
         return self.payload

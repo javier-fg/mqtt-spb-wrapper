@@ -23,9 +23,9 @@ The *mqtt-spb-wrapper* python module provides the following high level classes t
 - **MqttSpbEntityDevice** - End of Network Device (EoND) entity 
   - This entity that can publish DDATA, DBIRTH, DDEATH messages and subscribe to its own commands DCMD as well as to the STATUS messages from the SCADA application.
 - **MqttSpbEntityApplication** - Application entity 
-  - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD, to the STATUS messages from the SCADA application as well as to all other messages from the Sparkplug B Domain ID.
+  - This entity can publish NDATA, NBIRTH, NDEATH messages and subscribe to its own commands NCMD, to the STATUS messages from the SCADA application as well as to all other messages from the Sparkplug B Group ID.
 - **MqttSpbEntityScada** - SCADA entity 
-  - This entity can publish NDATA, NBIRTH, NDEATH messages as well as to send commands to all EoN and EoND (NCMD, DCMD), and subscribe to all other messages from the Sparkplug B Domain ID.
+  - This entity can publish NDATA, NBIRTH, NDEATH messages as well as to send commands to all EoN and EoND (NCMD, DCMD), and subscribe to all other messages from the Sparkplug B Group ID.
 
 Other helper classes:
 
@@ -58,7 +58,7 @@ _MQTT_USER = ""
 _MQTT_PASSW = ""
 
 # Sparkplug B parameters - Create the spB entity object
-domain_name = "TestDomain"
+group_name = "TestGroup"
 edge_node_name = "Gateway-001"
 device_name = "SimpleEoND-01"
 
@@ -74,7 +74,7 @@ def callback_cmd_test(data_value):
 
 
 # Create a new SpB EoND Entity
-device = MqttSpbEntityDevice(domain_name, edge_node_name, device_name, _DEBUG)
+device = MqttSpbEntityDevice(group_name, edge_node_name, device_name, _DEBUG)
 
 device.on_command = callback_command  # Callback for received device commands
 
@@ -230,7 +230,7 @@ print("Application finished !")
 
 In the following example (simple_spb_example.py), two entities are created:
 
-- **SCADA host entity** - The entity will listen to all domain messages and produce some debug messages ( see callbaks ). Virtually through the SCADA entity, we will subscribe to the EoND entity, so we can trigger an event when the real EoND publishes the value = 2, then the SCADA will send the "rebirth" command to the EoND.
+- **SCADA host entity** - The entity will listen to all group messages and produce some debug messages ( see callbaks ). Virtually through the SCADA entity, we will subscribe to the EoND entity, so we can trigger an event when the real EoND publishes the value = 2, then the SCADA will send the "rebirth" command to the EoND.
 - **EoND entity** - This entity, as in the previous example, will publish a counter value periodically. The entity has enabled the "rebirth" command. When the SCADA entity received the data value=2 from the EoND, SCADA entity will send the "rebirth" command message, and this EoND entity will publish the birth message.
 
 ``` python
@@ -246,7 +246,7 @@ _MQTT_USER = ""
 _MQTT_PASSW = ""
 
 # Sparkplug B parameters - Create the spB entity object
-_config_spb_domain_name = "DomainTest"
+_config_spb_group_name = "TestGroup"
 _config_spb_edge_node_name = "Edge-001"
 _config_spb_device_name = "Device-01"
 _config_spb_scada_name = "Scada-01"
@@ -270,7 +270,7 @@ def device_callback_cmd_rebirth(data_value):
         device.publish_birth()
         print("EoND publishing the birth certificate !")
 
-device = MqttSpbEntityDevice(spb_domain_name=_config_spb_domain_name,
+device = MqttSpbEntityDevice(spb_domain_name=_config_spb_group_name,
                              spb_eon_name=_config_spb_edge_node_name,
                              spb_eon_device_name=_config_spb_device_name,
                              retain_birth=True,
@@ -294,7 +294,7 @@ device.commands.set_value(name="test", value=False, callback_on_change=device_ca
 # Create a new SCADA Entity
 # ---------------------------------------------------------------------------------------------------------------------
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_domain_name=_config_spb_domain_name,
+scada = MqttSpbEntityScada(spb_domain_name=_config_spb_group_name,
                            spb_scada_name=_config_spb_scada_name,
                            debug_enabled=_DEBUG)
 
@@ -418,8 +418,8 @@ The repository includes a folder with some basic examples for the different type
 - **simple_eond_example.py** - Example shown in following section
 - **spb_eond_simple.py** - Simplified example for an spB Device ( EoND ) - HelloWorld example
 - **spb_eond_csv_player.py** - Example that creates a spB Device ( EoND) and sends data from a CSV file.
-- **spb_app_listener.py** - Example that creates an application spB Entity to listen to a domain data and devices events.
-- **spb_scada_example.py** - Creates a spB SCADA/Host application to discover domain entities, events and send some basic commands. Can be used in conjuntion with the spb_eond_simple.py example. 
+- **spb_app_listener.py** - Example that creates an application spB Entity to listen to a group data and devices events.
+- **spb_scada_example.py** - Creates a spB SCADA/Host application to discover group entities, events and send some basic commands. Can be used in conjuntion with the spb_eond_simple.py example. 
 - **mqtt_listener_example.py** - Simple paho mqtt client to display MQTT data and decode spB payloads.
 
 

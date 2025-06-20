@@ -30,7 +30,7 @@ _DEBUG = True               # Enable debug messages
 _GHOST_SPB_SCADA = True     # If true, the spB SCADA entity will not publish its BIRTH and DEATH messages
 
 # Sparkplug B parameters
-_config_spb_domain_name = os.environ.get("SPB_GROUP", "TestDomain")
+_config_spb_group_name = os.environ.get("SPB_GROUP", "TestGroup")
 _config_spb_scada_name = os.environ.get("SPB_SCADA", "SCADA-001")
 
 # Testing EoN and EoND names for automatic detection and events
@@ -48,7 +48,7 @@ print("--- Sparkplug B example - SCADA Entity Simple")
 # Global variables ----------------------------------------
 
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_domain_name=_config_spb_domain_name,
+scada = MqttSpbEntityScada(spb_domain_name=_config_spb_group_name,
                            spb_scada_name=_config_spb_scada_name,
                            debug_enabled=_DEBUG)
 
