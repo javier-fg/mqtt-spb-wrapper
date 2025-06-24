@@ -250,7 +250,7 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
 
         # Add the list of commands to the payload metrics
         for k in commands:
-            addMetric(payload, k, None, getValueDataType(commands[k]), commands[k])
+            addMetric(container=payload, name=k, alias=None, type=getValueDataType(commands[k]), value=commands[k], timestamp=int(round(time.time() * 1000)))
 
         # Send payload if there is new data
         if eond_name is not None:

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mqtt_spb_wrapper"
-version = "2.0.4"
+version = "2.0.5"
 description = "MQTT Sparkplug B v1.0 Wrapper"
 readme = "README.md"
 authors = [{ name = "Javier FG" }]
@@ -37,9 +37,14 @@ Homepage = "https://github.com/javier-fg/mqtt-spb-wrapper"
 # Dependencies: python3 -m pip install pip-tools build twine
 # python3 -m build
 # python3 -m twine check dist/*
-# python3 -m twine upload -r testpypi dist/*
+# python3 -m twine upload -r testpypi dist/* --skip-existing
 #
 # Final upload:
 # python3 -m twine upload dist/*
 #
 # pip3 install -i http://test.pypi.org/simple/ mqtt-spb-wrapper
+#
+#  requirements.txt --- TEST VERSION
+#   --extra-index-url https://test.pypi.org/simple/
+#   mqtt-spb-wrapper==2.0.4
+#
