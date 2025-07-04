@@ -219,5 +219,53 @@ class TestSpbPayloadParser(unittest.TestCase):
         self.assertEqual(decoded_value, bytes_value)
         self.assertEqual(metric['datatype'], MetricDataType.Bytes)
 
+    def test_parse_payload_with_integer_ranges(self):
+        """Test parsing payload with various Int8/16/32 and UInt8/16/32 metric ranges."""
+
+        # Values to test
+        test_values = [
+            ("int8_min", MetricDataType.Int8, -128),
+            ("int8_max", MetricDataType.Int8, 127),
+            ("int8_zero", MetricDataType.Int8, 0),
+
+            ("int16_min", MetricDataType.Int16, -32768),
+            ("int16_max", MetricDataType.Int16, 32767),
+            ("int16_neg", MetricDataType.Int16, -12345),
+
+            ("int32_min", MetricDataType.Int32, -2147483648),
+            ("int32_max", MetricDataType.Int32, 2147483647),
+            ("int32_neg", MetricDataType.Int32, -999999),
+
+            ("uint8_min", MetricDataType.UInt8, 0),
+            ("uint8_max", MetricDataType.UInt8, 255),
+
+            ("uint16_min", MetricDataType.UInt16, 0),
+            ("uint16_max", MetricDataType.UInt16, 65535),
+
+            ("uint32_min", MetricDataType.UInt32, 0),
+            ("uint32_val", MetricDataType.UInt32, 123456),
+            ("uint32_max", MetricDataType.UInt32, 4294967295),
+        ]
+
+        payload_bytes = Payload()
+
+        for name, dtype, value in test_values:
+            addMetric(payload_bytes, name=name, type=dtype, value=value, alias=None)
+
+        payload_data = payload_bytes.SerializeToString()
+        parser = SpbPayloadParser(payload_data)
+
+        self.assertIsNotNone(parser.payload)
+        self.assertIn("metrics", parser.payload)
+        parsed_metrics = {m['name']: m for m in parser.payload['metrics']}
+
+        for name, dtype, expected_value in test_values:
+            with self.subTest(metric=name):
+                self.assertIn(name, parsed_metrics)
+                metric = parsed_metrics[name]
+                self.assertEqual(metric['datatype'], dtype)
+                self.assertEqual(metric['value'], expected_value)
+
+
 if __name__ == '__main__':
     unittest.main()

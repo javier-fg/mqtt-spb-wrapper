@@ -1055,16 +1055,14 @@ class SpbTopic:
 
         return out
 
+
 class SpbPayloadParser:
     """
-        Class to parse binary payloads into dictionary
+    Class to parse binary SparkplugB payloads into dictionaries with decoded values
     """
 
     def __init__(self, payload_data=None):
-
         self.payload = None
-
-        # If data is passed, then process it
         if payload_data is not None:
             self.parse_payload(payload_data)
 
@@ -1079,69 +1077,109 @@ class SpbPayloadParser:
 
     def parse_payload(self, payload_data):
         """
-           Parse MQTT sparkplug B payload bytes ( protobuff ) into JSON
-        :param payload_data: bytes ( protobuff )
-        :return:  Dictionary or None if fails
+        Parse MQTT SparkplugB payload bytes (protobuf) into a dictionary
+        :param payload_data: bytes (protobuf payload)
+        :return: dictionary or None if parsing fails
         """
         pb_payload = Payload()
-
-        payload = None      # Temp buffer for parsing data
+        payload = None
 
         try:
             pb_payload.ParseFromString(payload_data)
 
-            # If empty conversion
-            if str(pb_payload) == "":
+            if not str(pb_payload):
                 raise ValueError("Invalid payload")
 
-            payload = MessageToDict(pb_payload)  # Convert it to DICT for easy handeling
+            payload = MessageToDict(pb_payload)
 
-            if "metrics" in payload.keys():
-                for i in range(len(payload['metrics'])):
+            if "metrics" in payload:
+                for metric in payload["metrics"]:
+                    # Extract a common value field for convenience
+                    metric["value"] = self._decode_metric_value(metric)
 
-                    # value item - Add the metrics [TYPE_value] field into [value] field for convenience
-                    for k in payload['metrics'][i].keys():
-                        if "Value" in k:
-                            payload['metrics'][i]['value'] = payload['metrics'][i][k]
-                            break
-
-                    # PARSE values - If value is numeric type, convert it
-                    if payload['metrics'][i]['datatype'] == MetricDataType.Double or payload['metrics'][i]['datatype'] == MetricDataType.Float:
-                        payload['metrics'][i]['value'] = float(payload['metrics'][i]['value'])
-                    elif payload['metrics'][i]['datatype'] >= MetricDataType.Int8 and payload['metrics'][i]['datatype'] <= MetricDataType.UInt64:
-                        payload['metrics'][i]['value'] = int(payload['metrics'][i]['value'])
-                    elif payload['metrics'][i]['datatype'] == MetricDataType.Boolean:
-                        payload['metrics'][i]['value'] = bool(payload['metrics'][i]['value'])
-                    elif payload['metrics'][i]['datatype'] == MetricDataType.DateTime:
+                    # Force alias to int if present
+                    if "alias" in metric:
                         try:
-                            payload['metrics'][i]['value'] = datetime.fromtimestamp(int(payload['metrics'][i]['value']) / 1000)
-                        except:
-                            pass
-                    elif payload['metrics'][i]['datatype'] == MetricDataType.Bytes or payload['metrics'][i]['datatype'] == MetricDataType.File:
-                        try:
-                            payload['metrics'][i]['value'] = base64.b64decode(payload['metrics'][i]['value'])
-                        except:
+                            metric["alias"] = int(metric["alias"])
+                        except (ValueError, TypeError):
                             pass
 
-                    # BUG FIX - Decoder makes alias as string, force alias to be int
-                    try:
-                        payload['metrics'][i]['alias'] = int(payload['metrics'][i]['alias'])
-                    except:
-                        pass
-
-        except Exception as e:
-
-            # Check if payload is from SCADA ( String type )
+        except Exception:
+            # Possibly a status message ("ONLINE" / "OFFLINE")
             try:
                 _payload = payload_data.decode()
-
-                if _payload == "OFFLINE" or _payload == "ONLINE":
+                if _payload in {"ONLINE", "OFFLINE"}:
                     self.payload = _payload
                     return self.payload
-
-            except Exception as e1:
+            except Exception:
                 pass
 
-        self.payload = payload  # Save the current payload
-
+        self.payload = payload
         return self.payload
+
+    def _decode_metric_value(self, metric):
+        """
+        Decode the actual value based on datatype and raw fields
+        """
+        datatype = metric.get("datatype")
+        value_field = next((k for k in metric if k.endswith("Value")), None)
+
+        if not value_field:
+            return None  # Nothing to decode
+
+        raw_val = metric.get(value_field)
+
+        if datatype is None or raw_val is None:
+            return None
+
+        # Numeric types
+        if datatype in [MetricDataType.Float, MetricDataType.Double]:
+            return float(raw_val)
+
+        elif datatype in [
+            MetricDataType.Int8, MetricDataType.Int16,
+            MetricDataType.Int32, MetricDataType.Int64
+        ]:
+            bit_width = {
+                MetricDataType.Int8: 8,
+                MetricDataType.Int16: 16,
+                MetricDataType.Int32: 32,
+                MetricDataType.Int64: 64,
+            }.get(datatype)
+            return self._fix_signed_int(int(raw_val), bit_width)
+
+        elif datatype in [MetricDataType.UInt8, MetricDataType.UInt16, MetricDataType.UInt32]:
+            return int(raw_val)  # unsigned, already fine
+
+        elif datatype == MetricDataType.UInt64:
+            return int(raw_val)
+
+        elif datatype == MetricDataType.Boolean:
+            return bool(raw_val)
+
+        elif datatype == MetricDataType.DateTime:
+            try:
+                return datetime.fromtimestamp(int(raw_val) / 1000)
+            except Exception:
+                return raw_val
+
+        elif datatype in [MetricDataType.Bytes, MetricDataType.File]:
+            try:
+                return base64.b64decode(raw_val)
+            except Exception:
+                return raw_val
+
+        else:
+            return raw_val  # Fallback
+
+    @staticmethod
+    def _fix_signed_int(val, bits):
+        """
+        Reinterpret an unsigned integer as a signed value of bit width
+        """
+        mask = (1 << bits) - 1
+        val = val & mask
+        sign_bit = 1 << (bits - 1)
+        if val & sign_bit:
+            val -= (1 << bits)
+        return val
