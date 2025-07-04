@@ -24,15 +24,15 @@ class MqttSpbEntityApp(MqttSpbEntity):
         """
 
         def __init__(self,
-                     spb_domain_name, spb_eon_name, spb_eon_device_name,
+                     spb_group_name, spb_eon_name, spb_eon_device_name,
                      callback_birth=None, callback_data=None, callback_death=None,
-                     debug_enabled=False):
+                     debug=False):
 
             super().__init__(
-                spb_domain_name=spb_domain_name,
+                spb_group_name=spb_group_name,
                 spb_eon_name=spb_eon_name,
                 spb_eon_device_name=spb_eon_device_name,
-                debug_enabled=debug_enabled,
+                debug=debug,
                 debug_id="MQTT_SPB_APP_DEVICE"
             )
 
@@ -62,13 +62,13 @@ class MqttSpbEntityApp(MqttSpbEntity):
 
         # functions - on_birth, on_death, on_data, send_command,
         def __init__(self,
-                     spb_domain_name, spb_eon_name,
+                     spb_group_name, spb_eon_name,
                      callback_birth=None, callback_data=None, callback_death=None,
-                     debug_enabled=False):
+                     debug=False):
 
-            super().__init__(spb_domain_name=spb_domain_name,
+            super().__init__(spb_group_name=spb_group_name,
                              spb_eon_name=spb_eon_name,
-                             debug_enabled=debug_enabled, debug_id="MQTT_SPB_APP_EDGENODE")
+                             debug=debug, debug_id="MQTT_SPB_APP_EDGENODE")
 
             self.callback_birth = callback_birth  # Save callback function references
             self.callback_data = callback_data
@@ -114,30 +114,30 @@ class MqttSpbEntityApp(MqttSpbEntity):
             return res
 
     def __init__(self,
-                 spb_domain_name,  # sparkplug B Domain name
-                 spb_app_name,     # Application name
+                 spb_group_name,  # sparkplug B Domain name
+                 spb_app_name,  # Application name
                  callback_birth=None, callback_data=None, callback_death=None,  # callbacks for different spb messages
                  callback_new_eon=None, callback_new_eond=None,
                  retain_birth=False,
-                 debug_enabled=False):
+                 debug=False):
         """
 
         Initiate the spb application entity
 
         Args:
-            spb_domain_name:  Sparkplug B domain name
+            spb_group_name:  Sparkplug B domain name
             spb_app_name:     Application entity ID ( will be part of the MQTT topic )
-            debug_enabled:       Enable / Disable debug information.
+            debug:       Enable / Disable debug information.
         """
 
         # Initialized the object ( parent class ) with Device_id as None - Configuring it as edge node
         super().__init__(
-            spb_domain_name=spb_domain_name,
+            spb_group_name=spb_group_name,
             spb_eon_name=spb_app_name,
             spb_eon_device_name=None,
             retain_birth=retain_birth,
             entity_is_scada=False,
-            debug_enabled=debug_enabled,
+            debug=debug,
             debug_id="MQTT_SPB_APP",
          )
 
@@ -156,7 +156,7 @@ class MqttSpbEntityApp(MqttSpbEntity):
         self._spb_initialized = False  # Flag to mark the initialization of spb persistent messages(BIRTH, DEATH)
         self._spb_initialized_timeout = 0  # Counter to keep initialization timeout event
 
-        self._debug_enabled = debug_enabled
+        self._debug_enabled = debug
 
         self._logger.info("New spb APP object")
 
@@ -231,7 +231,7 @@ class MqttSpbEntityApp(MqttSpbEntity):
         # Subscribe to all group topics
         if rc == 0:
             topic = "%s/%s/#" % (self._spb_namespace,
-                                 self._spb_domain_name)
+                                 self._spb_group_name)
             self._mqtt.subscribe(topic)
             self._logger.info("%s - Subscribed to MQTT topic: %s" % (self._entity_domain, topic))
 
@@ -332,9 +332,9 @@ class MqttSpbEntityApp(MqttSpbEntity):
         if eon_name not in self.entities_eon.keys():
             self._logger.debug("Unknown EoN entity, registering edge node: " + eon_name)
             self.entities_eon[eon_name] = MqttSpbEntityApp.EdgeEntity(
-                spb_domain_name=self.spb_domain_name,
+                spb_group_name=self._spb_group_name,
                 spb_eon_name=eon_name,
-                debug_enabled=self._debug_enabled
+                debug=self._debug_enabled
             )
 
             # If callback is configured
@@ -361,10 +361,10 @@ class MqttSpbEntityApp(MqttSpbEntity):
         if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
 
             self.entities_eon[eon_name].entities_eond[eond_name] = MqttSpbEntityApp.DeviceEntity(
-                spb_domain_name=self.spb_domain_name,
+                spb_group_name=self._spb_group_name,
                 spb_eon_name=eon_name,
                 spb_eon_device_name=eond_name,
-                debug_enabled=self._debug_enabled
+                debug=self._debug_enabled
             )
 
             # If callback is configured

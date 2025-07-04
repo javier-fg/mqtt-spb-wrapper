@@ -19,11 +19,11 @@ except:
     exit()
 
 # Create the spB entity object
-device = MqttSpbEntityDevice(spb_domain_name=config['sparkplugb']['domain_name'],
+device = MqttSpbEntityDevice(spb_group_name=config['sparkplugb']['group_name'],
                              spb_eon_name=config['sparkplugb']['edge_node_name'],
                              spb_eon_device_name=config['sparkplugb']['device_name'],
                              retain_birth=True,
-                             debug_enabled=_DEBUG)
+                             debug=_DEBUG)
 
 # Load data from CSV file -----------------------------------------------------------------------
 print("Loading data")

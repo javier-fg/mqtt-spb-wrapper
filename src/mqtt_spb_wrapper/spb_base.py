@@ -461,19 +461,19 @@ class SpbEntity:
     Initialize the class and set some basic configuration parameters.
 
     Args:
-        spb_domain_name (str): spB Domain name
+        spb_group_name (str): spB Domain name
         spb_eon_name (str): spB Edge of Network (EoN) node name
         spb_eon_device_name (str, optional): spB Edge of Network Devide (EoND) node name. If set to None, the entity is of an EoN type.
-        debug_enabled ( bool, optional): Enable console debug messages
+        debug ( bool, optional): Enable console debug messages
         debug_id ( str, optional ): Console debug identification for the class messages.
     """
 
     def __init__(
             self,
-            spb_domain_name: str,
+            spb_group_name: str,
             spb_eon_name: str,
             spb_eon_device_name: str = None,
-            debug_enabled: bool = False,
+            debug: bool = False,
             debug_id: str = "SPB_ENTITY",
     ):
 
@@ -486,21 +486,21 @@ class SpbEntity:
         self.commands = MetricGroup(birth_prefix="CMD")
 
         # Private members -----------
-        self._spb_domain_name = spb_domain_name
+        self._spb_group_name = spb_group_name
         self._spb_eon_name = spb_eon_name
         self._spb_eon_device_name = spb_eon_device_name
 
         if spb_eon_device_name is None:
-            self._entity_domain = "spBv1.%s.%s" % (self._spb_domain_name, self._spb_eon_name)
+            self._entity_domain = "spBv1.%s.%s" % (self._spb_group_name, self._spb_eon_name)
         else:
-            self._entity_domain = "spBv1.%s.%s.%s" % (self._spb_domain_name, self._spb_eon_name, self._spb_eon_device_name)
+            self._entity_domain = "spBv1.%s.%s.%s" % (self._spb_group_name, self._spb_eon_name, self._spb_eon_device_name)
 
         if spb_eon_device_name is None:
             self._entity_name = self._spb_eon_name
         else:
             self._entity_name = self._spb_eon_device_name
 
-        self._debug_enabled = debug_enabled     # Debug parameters
+        self._debug_enabled = debug     # Debug parameters
         self._debug_id = debug_id
         self._update_debug_id()
 
@@ -521,7 +521,7 @@ class SpbEntity:
         """
 
 
-        temp = {'spb_domain_name': self._spb_domain_name,
+        temp = {'spb_group_name': self._spb_group_name,
                 'spb_eon_name': self._spb_eon_name}
 
         if self._spb_eon_device_name is not None:
@@ -583,8 +583,8 @@ class SpbEntity:
         self._update_debug_id()
 
     @property
-    def spb_domain_name(self):
-        return self._spb_domain_name
+    def spb_group_name(self):
+        return self._spb_group_name
 
     @property
     def spb_eon_name(self):
@@ -959,7 +959,7 @@ class SpbTopic:
         Name space representation ( default - spBv1.0 )
         """
 
-        self.domain_name = None
+        self.group_name = None
         """
         spB domain name
         """
@@ -1010,7 +1010,7 @@ class SpbTopic:
         self.topic = topic_str
 
         self.namespace = topic_fields[0]
-        self.domain_name = topic_fields[1]
+        self.group_name = topic_fields[1]
         self.message_type = topic_fields[2]
         self.eon_name = None
         self.eon_device_name = None
@@ -1027,7 +1027,7 @@ class SpbTopic:
             self.eon_device_name = topic_fields[4]
             self.entity_name = self.eon_device_name
 
-        self.domain = "%s.%s.%s" % (self.namespace, self.domain_name, self.eon_name)
+        self.domain = "%s.%s.%s" % (self.namespace, self.group_name, self.eon_name)
         if self.eon_device_name is not None:
             self.domain += ".%s" % self.eon_device_name
 
@@ -1045,7 +1045,7 @@ class SpbTopic:
 
         out = "%s/%s/%s/%s" % (
             self.namespace,
-            self.domain_name,
+            self.group_name,
             self.message_type,
             self.eon_name,
         )

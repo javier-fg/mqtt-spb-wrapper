@@ -72,10 +72,10 @@ def callback_message(topic, payload):
 print("--- Sparkplug B example - End of Node Device - Simple")
 
 # Create the spB entity object
-device = MqttSpbEntityDevice(spb_domain_name=_config_spb_group_name,
+device = MqttSpbEntityDevice(spb_group_name=_config_spb_group_name,
                              spb_eon_name=_config_spb_eon_name,
                              spb_eon_device_name=_config_spb_eon_device_name,
-                             debug_enabled=_DEBUG,
+                             debug=_DEBUG,
                              retain_birth=True,
                              )
 

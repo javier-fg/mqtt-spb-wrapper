@@ -48,9 +48,9 @@ print("--- Sparkplug B example - SCADA Entity Simple")
 # Global variables ----------------------------------------
 
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_domain_name=_config_spb_group_name,
+scada = MqttSpbEntityScada(spb_group_name=_config_spb_group_name,
                            spb_scada_name=_config_spb_scada_name,
-                           debug_enabled=_DEBUG)
+                           debug=_DEBUG)
 
 # ATTRIBUTES - Scada application entity
 scada.attributes.set_value("description", "SCADA application simple")

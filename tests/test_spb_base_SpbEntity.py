@@ -9,8 +9,8 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_initialization_eon_node(self):
         """Test initialization of SpbEntity as an EoN node."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
-        self.assertEqual(entity.spb_domain_name, "Group1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
+        self.assertEqual(entity.spb_group_name, "Group1")
         self.assertEqual(entity.spb_eon_name, "EoN1")
         self.assertIsNone(entity.spb_eon_device_name)
         self.assertEqual(entity.entity_name, "EoN1")
@@ -22,8 +22,8 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_initialization_eon_device(self):
         """Test initialization of SpbEntity as an EoN device."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1", spb_eon_device_name="Device1")
-        self.assertEqual(entity.spb_domain_name, "Group1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1", spb_eon_device_name="Device1")
+        self.assertEqual(entity.spb_group_name, "Group1")
         self.assertEqual(entity.spb_eon_name, "EoN1")
         self.assertEqual(entity.spb_eon_device_name, "Device1")
         self.assertEqual(entity.entity_name, "Device1")
@@ -35,7 +35,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_set_metrics(self):
         """Test setting metrics in attributes, data, and commands."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set attribute
         entity.attributes.set_value(name="attr1", value="value1")
         self.assertFalse(entity.attributes.is_empty())
@@ -51,7 +51,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialize_birth_payload_eon_node(self):
         """Test serialization of birth payload for EoN node."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set some attributes and data
         entity.attributes.set_value(name="attr1", value="value1")
         entity.data.set_value(name="data1", value=123)
@@ -71,7 +71,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialize_birth_payload_eon_device(self):
         """Test serialization of birth payload for EoN device."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1", spb_eon_device_name="Device1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1", spb_eon_device_name="Device1")
         # Set some attributes and data
         entity.attributes.set_value(name="attr1", value="value1")
         entity.data.set_value(name="data1", value=123)
@@ -91,14 +91,14 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_deserialize_birth_payload(self):
         """Test deserialization of a birth payload."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set some attributes and data
         entity.attributes.set_value(name="attr1", value="value1")
         entity.data.set_value(name="data1", value=123)
         entity.commands.set_value(name="cmd1", value=True)
         payload_bytes = entity.serialize_payload_birth()
         # Create a new entity and deserialize the payload
-        new_entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        new_entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         new_entity.deserialize_payload_birth(payload_bytes)
         # Verify that metrics are correctly deserialized
         self.assertEqual(new_entity.attributes.get_value("attr1"), "value1")
@@ -107,7 +107,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialize_data_payload(self):
         """Test serialization of data payload."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set data metrics
         entity.data.set_value(name="data1", value=123)
         entity.data.set_value(name="data2", value=456)
@@ -125,13 +125,13 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_deserialize_data_payload(self):
         """Test deserialization of a data payload."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set data metrics
         entity.data.set_value(name="data1", value=123)
         entity.data.set_value(name="data2", value=456)
         payload_bytes = entity.serialize_payload_data()
         # Create a new entity and deserialize the payload
-        new_entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        new_entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         new_entity.deserialize_payload_data(payload_bytes)
         # Verify that metrics are correctly deserialized
         self.assertEqual(new_entity.data.get_value("data1"), 123)
@@ -139,7 +139,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialize_command_payload(self):
         """Test serialization of command payload."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set command metrics
         entity.commands.set_value(name="cmd1", value=True)
         entity.commands.set_value(name="cmd2", value=False)
@@ -157,13 +157,13 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_deserialize_command_payload(self):
         """Test deserialization of a command payload."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set command metrics
         entity.commands.set_value(name="cmd1", value=True)
         entity.commands.set_value(name="cmd2", value=False)
         payload_bytes = entity.serialize_payload_cmd()
         # Create a new entity and deserialize the payload
-        new_entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        new_entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         new_entity.deserialize_payload_cmd(payload_bytes)
         # Verify that metrics are correctly deserialized
         self.assertEqual(new_entity.commands.get_value("cmd1"), True)
@@ -171,14 +171,14 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_is_empty(self):
         """Test the is_empty method."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         self.assertTrue(entity.is_empty())
         entity.data.set_value(name="data1", value=123)
         self.assertFalse(entity.is_empty())
 
     def test_debug_properties(self):
         """Test setting and getting debug properties."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         self.assertFalse(entity.debug_enabled)
         entity.debug_enabled = True
         self.assertTrue(entity.debug_enabled)
@@ -189,11 +189,11 @@ class TestSpbEntity(unittest.TestCase):
     def test_entity_properties(self):
         """Test the entity properties."""
         entity = SpbEntity(
-            spb_domain_name="Group1",
+            spb_group_name="Group1",
             spb_eon_name="EoN1",
             spb_eon_device_name="Device1"
         )
-        self.assertEqual(entity.spb_domain_name, "Group1")
+        self.assertEqual(entity.spb_group_name, "Group1")
         self.assertEqual(entity.spb_eon_name, "EoN1")
         self.assertEqual(entity.spb_eon_device_name, "Device1")
         self.assertEqual(entity.entity_name, "Device1")
@@ -201,7 +201,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialization_with_different_data_types(self):
         """Test serialization with different data types."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set data metrics with different data types
         entity.data.set_value(name="int_metric", value=123, spb_data_type=MetricDataType.Int32)
         entity.data.set_value(name="float_metric", value=123.456)
@@ -232,7 +232,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_deserialization_with_different_data_types(self):
         """Test deserialization with different data types."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Set data metrics with different data types
         entity.data.set_value(name="int_metric", value=123, spb_data_type=MetricDataType.Int32)
         entity.data.set_value(name="float_metric", value=123.456)
@@ -245,7 +245,7 @@ class TestSpbEntity(unittest.TestCase):
         # Serialize data payload
         payload_bytes = entity.serialize_payload_data()
         # Create a new entity and deserialize the payload
-        new_entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        new_entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         new_entity.deserialize_payload_data(payload_bytes)
         # Verify that metrics are correctly deserialized
         self.assertEqual(new_entity.data.get_value("int_metric"), 123)
@@ -258,7 +258,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_metrics_callbacks(self):
         """Test that callbacks are called when metric values change."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         callback_called = False
 
         def metric_callback(value):
@@ -272,20 +272,20 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_serialize_empty_payload(self):
         """Test serialization when no metrics are set."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         payload_bytes = entity.serialize_payload_data()
         self.assertIsInstance(payload_bytes, bytearray)
         # self.assertEqual(len(payload_bytes), 0)  # Empty payload
 
     def test_deserialize_invalid_payload(self):
         """Test deserialization with invalid payload data."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         invalid_payload = b'invalid_payload_data'
         self.assertIsNone(entity.deserialize_payload_data(invalid_payload))
 
     def test_handle_metric_updates(self):
         """Test updating existing metrics and checking is_updated flag."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity.data.set_value(name="data1", value=123)
         self.assertTrue(entity.data.is_updated())
         _ = entity.data["data1"].value  # Access value to reset is_updated
@@ -295,7 +295,7 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_metricgroup_str_repr(self):
         """Test __str__ and __repr__ methods of MetricGroup."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity.data.set_value(name="data1", value=123)
         data_str = str(entity.data)
         data_repr = repr(entity.data)
@@ -304,13 +304,13 @@ class TestSpbEntity(unittest.TestCase):
 
     def test_entity_str_repr(self):
         """Test __str__ and __repr__ methods of SpbEntity."""
-        entity = SpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = SpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity.data.set_value(name="data1", value=123)
         entity_str = str(entity)
         entity_repr = repr(entity)
-        self.assertIn("spb_domain_name", entity_str)
+        self.assertIn("spb_group_name", entity_str)
         self.assertIn("data1", entity_str)
-        self.assertIn("spb_domain_name", entity_repr)
+        self.assertIn("spb_group_name", entity_repr)
         self.assertIn("data1", entity_repr)
 
 

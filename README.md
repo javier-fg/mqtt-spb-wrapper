@@ -270,7 +270,7 @@ def device_callback_cmd_rebirth(data_value):
         device.publish_birth()
         print("EoND publishing the birth certificate !")
 
-device = MqttSpbEntityDevice(spb_domain_name=_config_spb_group_name,
+device = MqttSpbEntityDevice(spb_group_name=_config_spb_group_name,
                              spb_eon_name=_config_spb_edge_node_name,
                              spb_eon_device_name=_config_spb_device_name,
                              retain_birth=True,
@@ -294,7 +294,7 @@ device.commands.set_value(name="test", value=False, callback_on_change=device_ca
 # Create a new SCADA Entity
 # ---------------------------------------------------------------------------------------------------------------------
 # Create the SCADA entity to listen to all spB messages
-scada = MqttSpbEntityScada(spb_domain_name=_config_spb_group_name,
+scada = MqttSpbEntityScada(spb_group_name=_config_spb_group_name,
                            spb_scada_name=_config_spb_scada_name,
                            debug_enabled=_DEBUG)
 

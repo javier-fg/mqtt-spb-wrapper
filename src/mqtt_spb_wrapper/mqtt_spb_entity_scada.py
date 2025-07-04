@@ -29,16 +29,16 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         """
 
         def __init__(self,
-                     spb_domain_name, spb_eon_name, spb_eon_device_name,
+                     spb_group_name, spb_eon_name, spb_eon_device_name,
                      scada_entity,
                      callback_birth=None, callback_data=None, callback_death=None,
-                     debug_enabled=False):
+                     debug=False):
 
             super().__init__(
-                spb_domain_name=spb_domain_name,
+                spb_group_name=spb_group_name,
                 spb_eon_name=spb_eon_name,
                 spb_eon_device_name=spb_eon_device_name,
-                debug_enabled=debug_enabled,
+                debug=debug,
                 debug_id="MQTT_SPB_SCADA_DEVICE"
             )
 
@@ -85,15 +85,15 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
 
         # functions - on_birth, on_death, on_data, send_command,
         def __init__(self,
-                     spb_domain_name, spb_eon_name,
+                     spb_group_name, spb_eon_name,
                      scada_entity,
                      callback_birth=None, callback_data=None, callback_death=None,
-                     debug_enabled=False):
+                     debug=False):
 
             super().__init__(
-                spb_domain_name=spb_domain_name,
+                spb_group_name=spb_group_name,
                 spb_eon_name=spb_eon_name,
-                debug_enabled=debug_enabled,
+                debug=debug,
                 debug_id="MQTT_SPB_SCADA_EDGENODE",
             )
 
@@ -158,18 +158,18 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
             return res
 
     def __init__(self,
-                 spb_domain_name,  # sparkplug B Domain name
+                 spb_group_name,  # sparkplug B Domain name
                  spb_scada_name,  # Scada application name
                  callback_birth=None, callback_data=None, callback_death=None,  # callbacks for different messages
                  callback_new_eon=None, callback_new_eond=None,
                  retain_birth=False,
-                 debug_enabled=False):
+                 debug=False):
         """
 
         Initiate the SCADA application class
 
         Args:
-            spb_domain_name:    Sparkplug B domain name
+            spb_group_name:    Sparkplug B domain name
             spb_scada_name:     Scada Application ID ( will be part of the MQTT topic )
             debug_info:         Enable / Disable debug information.
         """
@@ -177,12 +177,12 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         # Initialized base class
         MqttSpbEntity.__init__(
             self,
-            spb_domain_name=spb_domain_name,
+            spb_group_name=spb_group_name,
             spb_eon_name=spb_scada_name,
             spb_eon_device_name=None,
             retain_birth=retain_birth,
             entity_is_scada=True,
-            debug_enabled=debug_enabled,
+            debug=debug,
             debug_id="MQTT_SPB_SCADA"
         )
 
@@ -255,12 +255,12 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         # Send payload if there is new data
         if eond_name is not None:
             topic = "%s/%s/DCMD/%s/%s" % (self._spb_namespace,
-                                          self._spb_domain_name,
+                                          self._spb_group_name,
                                           eon_name,
                                           eond_name)
         else:
             topic = "%s/%s/NCMD/%s" % (self._spb_namespace,
-                                       self._spb_domain_name,
+                                       self._spb_group_name,
                                        eon_name)
 
         if payload.metrics:
@@ -288,10 +288,10 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         if eon_name not in self.entities_eon.keys():
             self._logger.debug("Unknown EoN entity, registering edge node: " + eon_name)
             self.entities_eon[eon_name] = self.EdgeEntity(
-                spb_domain_name=self.spb_domain_name,
+                spb_group_name=self.spb_group_name,
                 spb_eon_name=eon_name,
                 scada_entity=self,
-                debug_enabled=self._debug_enabled
+                debug=self._debug_enabled
             )
 
             # If callback is configured
@@ -318,11 +318,11 @@ class MqttSpbEntityScada(MqttSpbEntityApp):
         if eond_name not in self.entities_eon[eon_name].entities_eond.keys():
 
             self.entities_eon[eon_name].entities_eond[eond_name] = self.DeviceEntity(
-                spb_domain_name=self.spb_domain_name,
+                spb_group_name=self.spb_group_name,
                 spb_eon_name=eon_name,
                 spb_eon_device_name=eond_name,
                 scada_entity=self,
-                debug_enabled=self._debug_enabled
+                debug=self._debug_enabled
             )
 
             # If callback is configured

@@ -20,15 +20,15 @@ class TestMqttSpbEntity(unittest.TestCase):
     def test_initialization(self):
         """Test initialization of MqttSpbEntity."""
         entity = MqttSpbEntity(
-            spb_domain_name="Group1",
+            spb_group_name="Group1",
             spb_eon_name="EoN1",
             spb_eon_device_name="Device1",
             retain_birth=True,
-            debug_enabled=True,
+            debug=True,
             debug_id="TEST_ENTITY",
             entity_is_scada=False
         )
-        self.assertEqual(entity.spb_domain_name, "Group1")
+        self.assertEqual(entity.spb_group_name, "Group1")
         self.assertEqual(entity.spb_eon_name, "EoN1")
         self.assertEqual(entity.spb_eon_device_name, "Device1")
         self.assertTrue(entity._retain_birth)
@@ -38,7 +38,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_connect(self):
         """Test connecting to the MQTT broker."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         # Mock the connect method to return successfully
         self.mock_mqtt_client.connect.return_value = 0
         # Mock is_connected to return True
@@ -52,7 +52,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_disconnect(self):
         """Test disconnecting from the MQTT broker."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client  # Set the mock client
         entity.disconnect()
         self.mock_mqtt_client.loop_stop.assert_called()
@@ -61,7 +61,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_birth(self):
         """Test publishing a birth message."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client  # Set the mock client
         entity._mqtt.is_connected.return_value = True
 
@@ -74,7 +74,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_birth_not_connected(self):
         """Test publishing a birth message when not connected."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client  # Set the mock client
         entity._mqtt.is_connected.return_value = False
 
@@ -84,7 +84,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_data(self):
         """Test publishing data."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -97,7 +97,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_data_no_updates(self):
         """Test publishing data when there are no updates."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -109,7 +109,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_mqtt_on_connect(self):
         """Test the MQTT on_connect callback."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         mock_client = MagicMock()
         entity._mqtt_on_connect(mock_client, None, None, 0)
         # Check that it subscribed to the correct topics
@@ -121,7 +121,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_mqtt_on_message(self):
         """Test the MQTT on_message callback."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._loopback_topic = 'some/other/topic'  # Ensure it's not the same
         mock_msg = MagicMock()
         mock_msg.topic = 'spBv1.0/Group1/NCMD/EoN1'
@@ -140,7 +140,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_on_command_callback(self):
         """Test that the on_command callback is called when a command is received."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._loopback_topic = 'some/other/topic'
         mock_msg = MagicMock()
         mock_msg.topic = 'spBv1.0/Group1/NCMD/EoN1'
@@ -168,7 +168,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_is_connected(self):
         """Test the is_connected method."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         self.assertFalse(entity.is_connected())
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
@@ -176,7 +176,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_death_on_disconnect(self):
         """Test that a death message is published on disconnect."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
 
         entity.disconnect(skip_death_publish=False)
@@ -186,7 +186,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_skip_publish_death_on_disconnect(self):
         """Test that no death message is published when skip_death_publish is True."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
 
         entity.disconnect(skip_death_publish=True)
@@ -196,7 +196,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_handle_loopback_message(self):
         """Test that loopback messages are ignored."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._loopback_topic = 'test/topic'
         mock_msg = MagicMock()
         mock_msg.topic = 'test/topic'
@@ -207,7 +207,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_birth_scada(self):
         """Test publishing a birth message when entity is SCADA."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="SCADA", entity_is_scada=True)
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="SCADA", entity_is_scada=True)
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -219,7 +219,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_mqtt_on_message_state(self):
         """Test handling of STATE messages."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         mock_msg = MagicMock()
         mock_msg.topic = 'spBv1.0/Group1/STATE/SCADA'
         mock_msg.payload = b'ONLINE'
@@ -248,7 +248,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_connect_already_connected(self):
         """Test that connect does nothing if already connected."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -258,14 +258,14 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_disconnect_not_connected(self):
         """Test that disconnect does nothing if not connected."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = None
         entity.disconnect()
         # No exception should occur
 
     def test_publish_data_not_connected(self):
         """Test publishing data when not connected."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = False
 
@@ -275,7 +275,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_data_no_data(self):
         """Test publishing data when entity is empty."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -285,7 +285,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_publish_birth_no_data(self):
         """Test publishing birth when entity is empty."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._mqtt = self.mock_mqtt_client
         entity._mqtt.is_connected.return_value = True
 
@@ -295,7 +295,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_handle_incoming_cmd_with_invalid_metric(self):
         """Test handling a CMD with an invalid metric."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._loopback_topic = 'some/other/topic'
         mock_msg = MagicMock()
         mock_msg.topic = 'spBv1.0/Group1/NCMD/EoN1'
@@ -319,7 +319,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_handle_incoming_cmd_with_invalid_datatype(self):
         """Test handling a CMD with an invalid datatype."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity._loopback_topic = 'some/other/topic'
         mock_msg = MagicMock()
         mock_msg.topic = 'spBv1.0/Group1/NCMD/EoN1'
@@ -344,7 +344,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_tls_configuration(self):
         """Test that TLS configuration is set correctly."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
 
         # Mock the connect method to return successfully
         self.mock_mqtt_client.connect.return_value = 0
@@ -371,7 +371,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_tls_insecure_configuration(self):
         """Test that TLS insecure configuration is set correctly."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
 
         # Mock the connect method to return successfully
         self.mock_mqtt_client.connect.return_value = 0
@@ -395,7 +395,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_set_on_connect_callback(self):
         """Test setting the on_connect callback."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         callback = MagicMock()
         entity.on_connect = callback
 
@@ -408,7 +408,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_set_on_disconnect_callback(self):
         """Test setting the on_disconnect callback."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         callback = MagicMock()
         entity.on_disconnect = callback
 
@@ -418,7 +418,7 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_set_on_message_callback(self):
         """Test setting the on_message callback."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         callback = MagicMock()
         entity.on_message = callback
 
@@ -447,11 +447,11 @@ class TestMqttSpbEntity(unittest.TestCase):
 
     def test_entity_str_repr(self):
         """Test __str__ and __repr__ methods of MqttSpbEntity."""
-        entity = MqttSpbEntity(spb_domain_name="Group1", spb_eon_name="EoN1")
+        entity = MqttSpbEntity(spb_group_name="Group1", spb_eon_name="EoN1")
         entity_str = str(entity)
         entity_repr = repr(entity)
-        self.assertIn('spb_domain_name', entity_str)
-        self.assertIn('spb_domain_name', entity_repr)
+        self.assertIn('spb_group_name', entity_str)
+        self.assertIn('spb_group_name', entity_repr)
 
 
 if __name__ == '__main__':

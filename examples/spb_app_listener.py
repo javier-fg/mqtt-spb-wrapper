@@ -49,9 +49,9 @@ print("--- Sparkplug B example - spB Application Entity example")
 
 #  ---------- Create the spB App entity to listen to all spB messages
 application = MqttSpbEntityApp(
-    spb_domain_name=_config_spb_group_name,
+    spb_group_name=_config_spb_group_name,
     spb_app_name=_config_spb_app_name,
-    debug_enabled=_DEBUG
+    debug=_DEBUG
 )
 
 # ATTRIBUTES - Application entity

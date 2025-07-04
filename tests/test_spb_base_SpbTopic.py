@@ -14,7 +14,7 @@ class TestSpbTopic(unittest.TestCase):
         """ Test initialization with a valid topic string """
         topic = SpbTopic(self.valid_topic_str)
         self.assertEqual(topic.namespace, "spBv1.0")
-        self.assertEqual(topic.domain_name, "Group-001")
+        self.assertEqual(topic.group_name, "Group-001")
         self.assertEqual(topic.message_type, "DBIRTH")
         self.assertEqual(topic.eon_name, "Gateway-001")
         self.assertEqual(topic.eon_device_name, "SimpleEoND-01")
@@ -23,7 +23,7 @@ class TestSpbTopic(unittest.TestCase):
         """ Test initialization with an incomplete topic string """
         topic = SpbTopic(self.incomplete_topic_str)
         self.assertEqual(topic.namespace, "spBv1.0")
-        self.assertEqual(topic.domain_name, "Group-001")
+        self.assertEqual(topic.group_name, "Group-001")
         self.assertEqual(topic.message_type, "DBIRTH")
         self.assertIsNone(topic.eon_name)  # Expecting None for missing components
         self.assertIsNone(topic.eon_device_name)
@@ -66,7 +66,7 @@ class TestSpbTopic(unittest.TestCase):
     def test_get_group_name(self):
         """ Test retrieval of group name """
         topic = SpbTopic(self.valid_topic_str)
-        self.assertEqual(topic.domain_name, "Group-001")
+        self.assertEqual(topic.group_name, "Group-001")
 
     def test_repr_method(self):
         """ Test __repr__ method """
